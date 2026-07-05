@@ -1,19 +1,11 @@
 {
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
+  "buildCommand": "CI=false npm run build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "outputDirectory": "build",
   "rewrites": [
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "installCommand": "npm install --no-optional",
-  "buildCommand": "npm run build --if-present"
+  ]
 }
