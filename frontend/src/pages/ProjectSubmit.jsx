@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
-// ✅ ADD THIS - API URL at the top
 const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
 
 const ProjectSubmit = () => {
@@ -28,7 +27,6 @@ const ProjectSubmit = () => {
         const files = Array.from(e.target.files);
         setImages(files);
         
-        // Create previews
         const previews = files.map(file => URL.createObjectURL(file));
         setImagePreviews(previews);
     };
@@ -43,7 +41,6 @@ const ProjectSubmit = () => {
         setImagePreviews(newPreviews);
     };
 
-    // ✅ FIXED - Added const response = await axios.post()
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -56,35 +53,59 @@ const ProjectSubmit = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const formDataToSend = new FormData();
             
-            // Add all fields
-            Object.keys(formData).forEach(key => {
-                if (formData[key]) {
-                    formDataToSend.append(key, formData[key]);
-                }
-            });
+            // ✅ Get user data to get registration_code
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const registrationCode = userData.registration_code || userData.registrationCode;
             
-            // Add images
-            images.forEach(image => {
-                formDataToSend.append('images', image);
-            });
+            if (!registrationCode) {
+                toast.error('User data not found. Please login again.');
+                setLoading(false);
+                return;
+            }
 
-            // ✅ FIXED - Added const response = await axios.post()
-            const response = await axios.post(`${API_URL}/api/projects/submit`, formDataToSend, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
+            // ✅ Prepare the payload
+            const payload = {
+                registration_code: registrationCode,
+                aim: formData.aim,
+                materials: formData.materials,
+                procedure: formData.procedure,
+                conclusion: formData.conclusion,
+                abstract: formData.abstract,
+                video_link: formData.video_link,
+                images: images.map(img => img.name) // For now, send image names
+            };
+
+            console.log('📤 Submitting project data:', payload);
+
+            // ✅ Send as JSON (not FormData for now - fix later)
+            const response = await axios.post(
+                `${API_URL}/api/projects/submit`,
+                payload,
+                {
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
                 }
-            });
+            );
+
+            console.log('📥 Response:', response.data);
 
             if (response.data.success) {
                 toast.success('Project submitted successfully! 🎉');
+                // Update local storage
+                const updatedUser = { ...userData, project_submitted: true };
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                localStorage.setItem('group', JSON.stringify(updatedUser));
                 navigate('/dashboard');
+            } else {
+                toast.error(response.data.message || 'Submission failed');
             }
         } catch (error) {
             console.error('Submit Error:', error);
-            toast.error(error.response?.data?.message || 'Submission failed');
+            const errorMsg = error.response?.data?.message || error.message || 'Submission failed';
+            toast.error(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -95,7 +116,6 @@ const ProjectSubmit = () => {
             <h2 className="text-2xl font-bold mb-6">📝 Submit Your Project</h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Project Aim */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">🎯 Aim / Objective *</label>
                     <textarea
@@ -109,7 +129,6 @@ const ProjectSubmit = () => {
                     />
                 </div>
 
-                {/* Materials Required */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">🧪 Materials Required *</label>
                     <textarea
@@ -124,7 +143,6 @@ const ProjectSubmit = () => {
                     <p className="text-xs text-gray-500 mt-1">Separate items with commas or list each on a new line</p>
                 </div>
 
-                {/* Procedure */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">📋 Procedure / Methodology *</label>
                     <textarea
@@ -139,7 +157,6 @@ const ProjectSubmit = () => {
                     <p className="text-xs text-gray-500 mt-1">Number each step clearly</p>
                 </div>
 
-                {/* Conclusion */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">✅ Conclusion / Results *</label>
                     <textarea
@@ -153,7 +170,6 @@ const ProjectSubmit = () => {
                     />
                 </div>
 
-                {/* Abstract (Optional) */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">📄 Abstract (Optional)</label>
                     <textarea
@@ -166,7 +182,6 @@ const ProjectSubmit = () => {
                     />
                 </div>
 
-                {/* Images */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">🖼️ Upload Images</label>
                     <input
@@ -176,9 +191,8 @@ const ProjectSubmit = () => {
                         onChange={handleImageUpload}
                         className="mt-1 block w-full"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Upload photos of your project, experiments, or models (Max 5 images)</p>
+                    <p className="text-xs text-gray-500 mt-1">Upload photos of your project (Max 5 images)</p>
                     
-                    {/* Image Previews */}
                     {imagePreviews.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-3">
                             {imagePreviews.map((preview, index) => (
@@ -201,7 +215,6 @@ const ProjectSubmit = () => {
                     )}
                 </div>
 
-                {/* Video Link */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">🎥 Video Link (Optional)</label>
                     <input
@@ -212,7 +225,7 @@ const ProjectSubmit = () => {
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         placeholder="https://youtube.com/watch?v=..."
                     />
-                    <p className="text-xs text-gray-500 mt-1">YouTube or Google Drive link to project demo video</p>
+                    <p className="text-xs text-gray-500 mt-1">YouTube or Google Drive link</p>
                 </div>
 
                 <button

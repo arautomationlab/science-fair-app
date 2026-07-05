@@ -4,7 +4,6 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 
-// ✅ ADD THIS - API URL
 const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
 
 const AdminDashboard = () => {
@@ -38,7 +37,6 @@ const AdminDashboard = () => {
         try {
             const token = localStorage.getItem('token');
             const [projectsRes, teachersRes] = await Promise.all([
-                // ✅ FIXED - Using API_URL
                 axios.get(`${API_URL}/api/admin/all-projects`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
@@ -100,7 +98,6 @@ const AdminDashboard = () => {
         navigate(`/admin/winners/${grade}`);
     };
 
-    // Export to Excel
     const exportToExcel = () => {
         const exportData = filteredProjects.map(p => ({
             'Team Name': p.team_name,
@@ -146,6 +143,12 @@ const AdminDashboard = () => {
     const submittedProjects = projects.filter(p => p.project_submitted).length;
     const fullyJudged = projects.filter(p => p.judge_count >= 2).length;
     const totalRatings = projects.reduce((sum, p) => sum + (p.rating_count || 0), 0);
+    
+    // Calculate total registered students
+    const totalStudents = projects.reduce((sum, p) => {
+        const students = JSON.parse(p.students_data || '[]');
+        return sum + students.length;
+    }, 0);
 
     const uniqueGrades = [...new Set(projects.map(p => p.grade))].sort();
     const uniqueDivisions = [...new Set(projects.map(p => p.division))].sort();
@@ -173,7 +176,6 @@ const AdminDashboard = () => {
 
     return (
         <div className="max-w-7xl mx-auto p-6">
-            {/* Header */}
             <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-800">🔧 Admin Dashboard</h2>
@@ -198,7 +200,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <p className="text-sm text-gray-600">Total Projects</p>
                     <p className="text-2xl font-bold text-blue-600">{totalProjects}</p>
@@ -218,6 +220,10 @@ const AdminDashboard = () => {
                 <div className="bg-pink-50 p-4 rounded-lg border border-pink-200">
                     <p className="text-sm text-gray-600">Parent Ratings</p>
                     <p className="text-2xl font-bold text-pink-600">{totalRatings}</p>
+                </div>
+                <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                    <p className="text-sm text-gray-600">👨‍🎓 Students</p>
+                    <p className="text-2xl font-bold text-indigo-600">{totalStudents}</p>
                 </div>
             </div>
 
