@@ -6,11 +6,33 @@ const { authenticate } = require('../middleware/auth');
 // Submit Project Details (Enhanced)
 router.post('/submit', authenticate, async (req, res) => {
     try {
+        console.log('📥 Project submission received');
+        console.log('📦 Body:', req.body);
+        console.log('👤 User:', req.user);
+
         const { 
-            aim, materials, procedure, conclusion, 
+            registration_code, aim, materials, procedure, conclusion, 
             abstract, video_link, images 
         } = req.body;
-        const groupId = req.user.id;
+        
+        // Get group_id from registration_code
+        let groupId = req.user.id;
+        
+        // If registration_code is provided, find the group
+        if (registration_code) {
+            const groupResult = await pool.query(
+                'SELECT id FROM groups WHERE registration_code = $1',
+                [registration_code.toUpperCase()]
+            );
+            if (groupResult.rows.length > 0) {
+                groupId = groupResult.rows[0].id;
+            } else {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Group not found for this registration code'
+                });
+            }
+        }
 
         // Check if project already exists
         const existing = await pool.query(
@@ -27,8 +49,9 @@ router.post('/submit', authenticate, async (req, res) => {
                     abstract = $5, video_link = $6, images = $7, updated_at = NOW()
                 WHERE group_id = $8
                 RETURNING *`,
-                [aim, materials, procedure, conclusion, abstract, video_link, images || '[]', groupId]
+                [aim, materials, procedure, conclusion, abstract || '', video_link || '', images || '[]', groupId]
             );
+            console.log('✅ Project updated for group:', groupId);
         } else {
             // Insert new
             result = await pool.query(
@@ -36,8 +59,9 @@ router.post('/submit', authenticate, async (req, res) => {
                 (group_id, aim, materials, procedure, conclusion, abstract, video_link, images)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 RETURNING *`,
-                [groupId, aim, materials, procedure, conclusion, abstract, video_link, images || '[]']
+                [groupId, aim, materials, procedure, conclusion, abstract || '', video_link || '', images || '[]']
             );
+            console.log('✅ New project created for group:', groupId);
         }
 
         // Update group submission status
@@ -56,7 +80,44 @@ router.post('/submit', authenticate, async (req, res) => {
         console.error('Project Submission Error:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to submit project'
+            message: 'Failed to submit project: ' + error.message
+        });
+    }
+});
+
+// Get Project Details (for judges/parents)
+router.get('/:code', async (req, res) => {
+    try {
+        const { code } = req.params;
+
+        const result = await pool.query(
+            `SELECT g.*, pd.* 
+            FROM groups g
+            LEFT JOIN project_details pd ON g.id = pd.group_id
+            WHERE g.registration_code = $1`,
+            [code.toUpperCase()]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
+
+        // Don't send password
+        delete result.rows[0].password;
+
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Get Project Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch project'
         });
     }
 });

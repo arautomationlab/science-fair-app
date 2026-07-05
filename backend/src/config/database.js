@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const bcrypt = require('bcryptjs');
 
 const DB_PATH = path.join(__dirname, '../../database.json');
 
@@ -35,14 +34,6 @@ const pool = {
         const db = readDB();
         
         // ===== USER QUERIES =====
-        // Find user by username
-        if (sql.includes('SELECT * FROM users WHERE username = $1')) {
-            const username = params[0];
-            const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase());
-            return { rows: user ? [user] : [] };
-        }
-
-        // Find user by username and role
         if (sql.includes('SELECT * FROM users WHERE username = $1 AND role = $2')) {
             const username = params[0];
             const role = params[1];
@@ -53,25 +44,12 @@ const pool = {
             return { rows: user ? [user] : [] };
         }
 
-        // Find user by full_name and role
-        if (sql.includes('SELECT * FROM users WHERE full_name = $1 AND role = $2')) {
-            const fullName = params[0];
-            const role = params[1];
-            const user = db.users.find(u => 
-                u.full_name === fullName && 
-                u.role === role
-            );
-            return { rows: user ? [user] : [] };
-        }
-
-        // Get all teachers
         if (sql.includes('SELECT id, username, full_name, teacher_name, email FROM users WHERE role = $1')) {
             const teachers = db.users.filter(u => u.role === 'teacher');
             return { rows: teachers };
         }
 
         // ===== GROUP QUERIES =====
-        // Insert group
         if (sql.includes('INSERT INTO groups')) {
             const newGroup = {
                 id: db.nextId++,
@@ -95,14 +73,18 @@ const pool = {
             return { rows: [{ id: newGroup.id, registration_code: newGroup.registration_code }] };
         }
 
-        // Find group by registration_code
         if (sql.includes('SELECT * FROM groups WHERE registration_code = $1')) {
             const code = params[0];
             const group = db.groups.find(g => g.registration_code === code);
             return { rows: group ? [group] : [] };
         }
 
-        // Get teacher's projects
+        if (sql.includes('SELECT * FROM groups WHERE id = $1')) {
+            const id = params[0];
+            const group = db.groups.find(g => g.id === id);
+            return { rows: group ? [group] : [] };
+        }
+
         if (sql.includes('SELECT * FROM groups WHERE teacher_id = $1 OR teacher_guide = $2')) {
             const teacherId = params[0];
             const teacherName = params[1];
@@ -113,24 +95,14 @@ const pool = {
             return { rows: groups };
         }
 
-        // Get all groups
-        if (sql.includes('SELECT * FROM groups')) {
-            return { rows: db.groups };
-        }
-
-        // Update group
-        if (sql.includes('UPDATE groups SET')) {
-            // Simple update - find and update
-            const code = params[params.length - 1];
-            const groupIndex = db.groups.findIndex(g => g.registration_code === code);
-            if (groupIndex !== -1) {
-                db.groups[groupIndex].project_submitted = true;
-                db.groups[groupIndex].submitted_at = new Date().toISOString();
-                db.groups[groupIndex].updated_at = new Date().toISOString();
-                writeDB(db);
-                return { rows: [db.groups[groupIndex]] };
-            }
-            return { rows: [] };
+        // Get all groups with left join project details
+        if (sql.includes('SELECT g.*, pd.*, u.full_name as teacher_name FROM groups g')) {
+            // Simplified response - just return all groups with project details
+            const groups = db.groups.map(g => {
+                const details = db.projectDetails.find(pd => pd.group_id === g.id);
+                return { ...g, ...details };
+            });
+            return { rows: groups };
         }
 
         // ===== PROJECT DETAILS QUERIES =====
@@ -151,6 +123,28 @@ const pool = {
             db.projectDetails.push(newDetail);
             writeDB(db);
             return { rows: [newDetail] };
+        }
+
+        if (sql.includes('UPDATE project_details SET')) {
+            // Update existing project details
+            const groupId = params[7];
+            const existingIndex = db.projectDetails.findIndex(pd => pd.group_id === groupId);
+            if (existingIndex !== -1) {
+                db.projectDetails[existingIndex] = {
+                    ...db.projectDetails[existingIndex],
+                    aim: params[0],
+                    materials: params[1],
+                    procedure: params[2],
+                    conclusion: params[3],
+                    abstract: params[4],
+                    video_link: params[5],
+                    images: params[6] || '[]',
+                    updated_at: new Date().toISOString()
+                };
+                writeDB(db);
+                return { rows: [db.projectDetails[existingIndex]] };
+            }
+            return { rows: [] };
         }
 
         if (sql.includes('SELECT * FROM project_details WHERE group_id = $1')) {
@@ -186,6 +180,19 @@ const pool = {
             db.parentRatings.push(newRating);
             writeDB(db);
             return { rows: [newRating] };
+        }
+
+        // Update group submission status
+        if (sql.includes('UPDATE groups SET project_submitted = TRUE')) {
+            const groupId = params[0];
+            const groupIndex = db.groups.findIndex(g => g.id === groupId);
+            if (groupIndex !== -1) {
+                db.groups[groupIndex].project_submitted = true;
+                db.groups[groupIndex].submitted_at = new Date().toISOString();
+                writeDB(db);
+                return { rows: [db.groups[groupIndex]] };
+            }
+            return { rows: [] };
         }
 
         console.log('⚠️ Unknown query:', sql.substring(0, 100) + '...');

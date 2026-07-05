@@ -54,7 +54,7 @@ const ProjectSubmit = () => {
         try {
             const token = localStorage.getItem('token');
             
-            // ✅ Get user data to get registration_code
+            // Get user data to get registration_code
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
             const registrationCode = userData.registration_code || userData.registrationCode;
             
@@ -64,7 +64,7 @@ const ProjectSubmit = () => {
                 return;
             }
 
-            // ✅ Prepare the payload
+            // Prepare the payload
             const payload = {
                 registration_code: registrationCode,
                 aim: formData.aim,
@@ -73,12 +73,11 @@ const ProjectSubmit = () => {
                 conclusion: formData.conclusion,
                 abstract: formData.abstract,
                 video_link: formData.video_link,
-                images: images.map(img => img.name) // For now, send image names
+                images: images.map(img => img.name)
             };
 
             console.log('📤 Submitting project data:', payload);
 
-            // ✅ Send as JSON (not FormData for now - fix later)
             const response = await axios.post(
                 `${API_URL}/api/projects/submit`,
                 payload,

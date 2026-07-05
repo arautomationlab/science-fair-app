@@ -6,11 +6,14 @@ const { authenticateAdmin } = require('../middleware/auth');
 // Get All Projects (Admin)
 router.get('/all-projects', authenticateAdmin, async (req, res) => {
     try {
+        console.log('📊 Admin fetching all projects');
+
         const result = await pool.query(
             `SELECT 
                 g.*,
                 pd.aim, pd.materials, pd.procedure, pd.conclusion,
                 pd.abstract as project_abstract, pd.images, pd.video_link,
+                pd.submitted_at as project_submitted_at,
                 (SELECT AVG(score) FROM judge_scores WHERE group_id = g.id) as average_score,
                 (SELECT COUNT(*) FROM judge_scores WHERE group_id = g.id) as judge_count,
                 (SELECT AVG(stars) FROM parent_ratings WHERE group_id = g.id) as parent_rating,
@@ -22,6 +25,8 @@ router.get('/all-projects', authenticateAdmin, async (req, res) => {
             ORDER BY g.grade, g.division`
         );
 
+        console.log(`✅ Found ${result.rows.length} projects`);
+
         res.json({
             success: true,
             data: result.rows
@@ -31,7 +36,7 @@ router.get('/all-projects', authenticateAdmin, async (req, res) => {
         console.error('All Projects Error:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch projects'
+            message: 'Failed to fetch projects: ' + error.message
         });
     }
 });
