@@ -13,5 +13,7 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "installCommand": "npm install --no-optional",
+  "buildCommand": "npm run build --if-present"
 }
