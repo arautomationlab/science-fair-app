@@ -31,6 +31,9 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [registrationData, setRegistrationData] = useState(null);
   
+  // ✅ ADD THIS - Get API URL from environment variable
+  const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+
   const [formData, setFormData] = useState({
     grade: '',
     division: '',
@@ -127,8 +130,9 @@ const Register = () => {
         students: formData.students
       };
 
+      // ✅ FIXED - Use API_URL instead of localhost
       const response = await axios.post(
-        'http://localhost:5000/api/auth/register',
+        `${API_URL}/api/auth/register`,
         payload
       );
 
