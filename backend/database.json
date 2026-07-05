@@ -3,181 +3,181 @@
     {
       "id": 1,
       "username": "admin",
-      "password": "$2a$10$43lPM3wWeExHmLt2yJgSNOuEZmyzAW/nMt/xPksK3sh6r1iQ5gKbS",
+      "password": "$2a$10$JtupQPTXLBu95PhbOUwuPek3CkmOceDjmDg0RKn9qnLfDtDxG2KVG",
       "full_name": "Administrator",
       "role": "admin",
-      "created_at": "2026-07-04T03:37:45.642Z"
+      "created_at": "2026-07-05T09:43:58.077Z"
     },
     {
       "id": 2,
       "username": "chauhan.sushma",
-      "password": "$2a$10$GuUTmJsk6zQzcYiqowZI0urAR0SBiFj2LAuX8YZEn7Yda.lSZIlZa",
+      "password": "$2a$10$CXohk8lx1AXFt7yCyrZqBew6xEnBtsihABRP1pBuAL/5F9aJXEww2",
       "full_name": "Chauhan Sushma",
       "teacher_name": "Chauhan Sushma",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:45.704Z"
+      "created_at": "2026-07-05T09:43:58.293Z"
     },
     {
       "id": 3,
       "username": "dharne.rekha",
-      "password": "$2a$10$7S24.HLI7WA9ZHdnYcRCr.rdZl7icRqu3JD5lw1QfuUt2MaTAiyzC",
+      "password": "$2a$10$XtgTAyByIHHQ7iroRgxguOo2APVw7weEcxqZKuOzTmS84z8kJIYpW",
       "full_name": "Dharne Rekha",
       "teacher_name": "Dharne Rekha",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:45.766Z"
+      "created_at": "2026-07-05T09:43:58.489Z"
     },
     {
       "id": 4,
       "username": "chamedia.aarti",
-      "password": "$2a$10$u24MK1p4i2yybU5rUjhTrers.2KQHx20sNpOtWYxcYyNbmhB6Ueay",
+      "password": "$2a$10$LC9pADCOtbVrQpUZjvGkaOIf7ktdoMoQMZbhPZ8GWHAGzwCGGYawS",
       "full_name": "Chamedia Aarti",
       "teacher_name": "Chamedia Aarti",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:45.828Z"
+      "created_at": "2026-07-05T09:43:58.691Z"
     },
     {
       "id": 5,
       "username": "nazneen.pathan",
-      "password": "$2a$10$8IbWL4sWP1qll4AyUKJDt.4Ij2SsBzCBOJxqhJP1S9Blm3j0cBNui",
+      "password": "$2a$10$a/FivmPCO3Os652veg.NNuPshm8HyC/SUAmnOoY03GKHIsnhV9P/W",
       "full_name": "Nazneen Pathan",
       "teacher_name": "Nazneen Pathan",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:45.890Z"
+      "created_at": "2026-07-05T09:43:58.886Z"
     },
     {
       "id": 6,
       "username": "pankaja.sherkhane",
-      "password": "$2a$10$yU.15kwiCG2/xpj5G6RMpe7iDZLWS2MyiX8XgioweOfYXuj2Y3e5.",
+      "password": "$2a$10$Xj3Fr6N9HjSRwaz756oiJ.nOiMkZKcvHlm1DgodDKh449o7P6Iuxi",
       "full_name": "Pankaja Sherkhane",
       "teacher_name": "Pankaja Sherkhane",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:45.952Z"
+      "created_at": "2026-07-05T09:43:59.095Z"
     },
     {
       "id": 7,
       "username": "sandya.sr",
-      "password": "$2a$10$UgRCvdLlL7/zZQ6mnWzc/uvDGPQCXWmAOuKWGHPcVtqpSrr9yyu6m",
+      "password": "$2a$10$.Qb.TPZieuaeAwmCOuFgj.QHqY58Nmsg.AZF3UdASRWjo2O2WlfVK",
       "full_name": "Sandya S.R.",
       "teacher_name": "Sandya S.R.",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.014Z"
+      "created_at": "2026-07-05T09:43:59.292Z"
     },
     {
       "id": 8,
       "username": "bidarkar.neelam",
-      "password": "$2a$10$ZJamXUgc3hI0p4ZhC9Lmf.jg5zVieVizTlM3DrrJAtjswwEgiqUsu",
+      "password": "$2a$10$e8MVX/rTKuUKLGHNc/lFF.fV5NAwwR2Wpm9kYVNZ5.aLpndUYwrpK",
       "full_name": "Bidarkar Neelam",
       "teacher_name": "Bidarkar Neelam",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.076Z"
+      "created_at": "2026-07-05T09:43:59.493Z"
     },
     {
       "id": 9,
       "username": "balaji.hude",
-      "password": "$2a$10$oGJJoLl5jugjqxgujVAoougli.vhTgu8Z1IEGP5sgvNM3HOyIYIJm",
+      "password": "$2a$10$UnT0lo949aAL7P8V56jRhupZuo6eKIJufMqpxnwaBUMczJ7mFFW.G",
       "full_name": "Balaji Hude",
       "teacher_name": "Balaji Hude",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.139Z"
+      "created_at": "2026-07-05T09:43:59.695Z"
     },
     {
       "id": 10,
       "username": "patil.smita",
-      "password": "$2a$10$2Xbjydunf6xUfOZqM6DHOuBH8S8V6/0ElnFmhEg1TIVhczu347ZUi",
+      "password": "$2a$10$t3q1l6U91zTHe4POxrYNO.u2ocBgXi3chUNmDgyX0ucM9P30rFsK6",
       "full_name": "Patil Smita",
       "teacher_name": "Patil Smita",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.201Z"
+      "created_at": "2026-07-05T09:43:59.890Z"
     },
     {
       "id": 11,
       "username": "udgire.swati",
-      "password": "$2a$10$123IpvFBRQRiwK4v6nNJA.Mq.0CK3QILrF81vMG75faU7dRnFtpmW",
+      "password": "$2a$10$sJ.caFkct0Vs2EQYnqRAbOkB/mVCVxke9iHn99YvCydTSt7t9vRFO",
       "full_name": "Udgire Swati",
       "teacher_name": "Udgire Swati",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.262Z"
+      "created_at": "2026-07-05T09:44:00.092Z"
     },
     {
       "id": 12,
       "username": "gupta.premalata",
-      "password": "$2a$10$T/GVVuUjdIktP/imksU94eOUSTP4agRK/zi/369oiTKqEL31WtZZ2",
+      "password": "$2a$10$m1qFRCGUY.hxPtGF.XPz5uFciwTnvEDJmNlTnRwLfs1OcySpY9roS",
       "full_name": "Gupta Premalata",
       "teacher_name": "Gupta Premalata",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.319Z"
+      "created_at": "2026-07-05T09:44:00.293Z"
     },
     {
       "id": 13,
       "username": "shaikh.naaz",
-      "password": "$2a$10$KDL4lq8Tdwt7AUqgSKxTuuqESVxsKwSdApMn/gLtjBm9FwEMhTOAO",
+      "password": "$2a$10$ZrxpqcPS7/wMFiHTJJwSRuenHOWitbPjqv3./5Xaf18ikGPFtfSRq",
       "full_name": "Shaikh Naaz",
       "teacher_name": "Shaikh Naaz",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.375Z"
+      "created_at": "2026-07-05T09:44:00.486Z"
     },
     {
       "id": 14,
       "username": "gaikwad.satish",
-      "password": "$2a$10$kUXLRH4HvdHRJkWdcfnsaOXPFf4OnKdo5PiNpTydqYsZqYtgxiD9G",
+      "password": "$2a$10$LK61z6A5r9Um4eKzWw.zr.usk4V9x4/dqV.sn3/LUbO7T7N5I3Vru",
       "full_name": "Gaikwad Satish",
       "teacher_name": "Gaikwad Satish",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.431Z"
+      "created_at": "2026-07-05T09:44:00.693Z"
     },
     {
       "id": 15,
       "username": "kadam.sachin",
-      "password": "$2a$10$RuYuqelb2P9vXyp8omVo6uo1eK.ceRcqQwu2f99YVovT.2kymiH8S",
+      "password": "$2a$10$IOOPR6OzxI.a1AUGMD2V7OWM2o5Xxl18QFBvfr/0KoENmrHJ4Pq/S",
       "full_name": "Kadam Sachin",
       "teacher_name": "Kadam Sachin",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.491Z"
+      "created_at": "2026-07-05T09:44:00.891Z"
     },
     {
       "id": 16,
       "username": "gore.sharad",
-      "password": "$2a$10$EwHkdqWFR0POfANjA4wjS.uEp8txq.CBwxkGUTBHFDc4XpVb71R3O",
+      "password": "$2a$10$46yaLGf0Xf3Dy4fDrLwYau70IH2kCttEfnrC4up7Zda5Ae2hmCDza",
       "full_name": "Gore Sharad",
       "teacher_name": "Gore Sharad",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.551Z"
+      "created_at": "2026-07-05T09:44:01.084Z"
     },
     {
       "id": 17,
       "username": "raut.monali",
-      "password": "$2a$10$AB3xwCTS1nLubPc4SZ2PZej8OH//v0UfIq8G039l2ktJq7.hYyTcO",
+      "password": "$2a$10$Gbs2HOEiMLyBmtsEr.uhAe.RHCzMkZX4T2ZvKkw7X2Jw/DdisqInS",
       "full_name": "Raut Monali",
       "teacher_name": "Raut Monali",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.608Z"
+      "created_at": "2026-07-05T09:44:01.282Z"
     },
     {
       "id": 18,
       "username": "kondekar.surekha",
-      "password": "$2a$10$xDSUkHBAjifFOle2qS7fTul7lQMNQqgkxnNU35AyPXquVmX2NTfY.",
+      "password": "$2a$10$wqBGF8DzyZRPJmjCcGDLcuh/KEqSEAOzNGifWkihSV5jGFUZXleFC",
       "full_name": "Kondekar Surekha",
       "teacher_name": "Kondekar Surekha",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.663Z"
+      "created_at": "2026-07-05T09:44:01.486Z"
     },
     {
       "id": 19,
       "username": "tapade.madhuri",
-      "password": "$2a$10$W.BNGZfnBtpSNcyZokkABObE/kGDEUSpQx/00g7hIBpnDh9nx62p2",
+      "password": "$2a$10$Nvuxodx3BC1D7hrVo0/UXODmiDla19lGNrBAgqf2jA7.qVrbzBnPC",
       "full_name": "Tapade Madhuri",
       "teacher_name": "Tapade Madhuri",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.722Z"
+      "created_at": "2026-07-05T09:44:01.679Z"
     },
     {
       "id": 20,
       "username": "ingle.ravindra",
-      "password": "$2a$10$gxhs9otS0FRjF/MjJ2zFYePXx025JaCcqwY65cPVejPnHGYZ5weGu",
+      "password": "$2a$10$LukgAZ2IUWAxlsgj11kTcOnqIGU7FNTZyKgfRCAHIYmgpN9CAjrF6",
       "full_name": "Ingle Ravindra",
       "teacher_name": "Ingle Ravindra",
       "role": "teacher",
-      "created_at": "2026-07-04T03:37:46.787Z"
+      "created_at": "2026-07-05T09:44:01.875Z"
     }
   ],
   "groups": [],
