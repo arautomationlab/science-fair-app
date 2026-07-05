@@ -14,6 +14,9 @@ const Login = () => {
         adminPassword: ''
     });
 
+    // ✅ ADD THIS - Get API URL from environment variable
+    const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -46,8 +49,9 @@ const Login = () => {
                 };
             }
 
+            // ✅ FIXED - Use API_URL instead of localhost
             const response = await axios.post(
-                `http://localhost:5000${endpoint}`,
+                `${API_URL}${endpoint}`,
                 payload
             );
 
