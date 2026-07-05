@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+
+// ✅ ADD THIS - API URL at the top
+const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
 
 const PublicProject = () => {
     const { code } = useParams();
@@ -16,19 +19,22 @@ const PublicProject = () => {
         fetchProject();
     }, [code]);
 
+    // ✅ FIXED - Added const response = await axios.get()
     const fetchProject = async () => {
         try {
-            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+            const response = await axios.get(`${API_URL}/api/projects/public/${code}`);
             if (response.data.success) {
                 setProject(response.data.data);
             }
         } catch (error) {
+            console.error('Fetch Project Error:', error);
             toast.error('Project not found');
         } finally {
             setLoading(false);
         }
     };
 
+    // ✅ FIXED - Added const response = await axios.post()
     const handleRating = async (stars) => {
         if (!stars) {
             toast.error('Please select a rating');
@@ -37,7 +43,11 @@ const PublicProject = () => {
 
         setSubmittingRating(true);
         try {
-            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+            const response = await axios.post(`${API_URL}/api/ratings/rate`, {
+                registration_code: code,
+                stars: stars,
+                comment: comment
+            });
 
             if (response.data.success) {
                 toast.success('Thank you for your rating! 🌟');
@@ -46,6 +56,7 @@ const PublicProject = () => {
                 fetchProject(); // Refresh to show updated ratings
             }
         } catch (error) {
+            console.error('Rating Error:', error);
             toast.error(error.response?.data?.message || 'Failed to submit rating');
         } finally {
             setSubmittingRating(false);

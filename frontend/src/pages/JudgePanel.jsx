@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
+// ✅ ADD THIS - API URL at the top
+const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+
 const JudgePanel = () => {
     const { code } = useParams();
     const navigate = useNavigate();
@@ -29,13 +32,18 @@ const JudgePanel = () => {
         fetchProject();
     }, [code]);
 
+    // ✅ FIXED - Added const response = await axios.get()
     const fetchProject = async () => {
         try {
-            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/api/projects/${code}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (response.data.success) {
                 setProject(response.data.data);
             }
         } catch (error) {
+            console.error('Fetch Project Error:', error);
             toast.error('Project not found');
         }
     };
@@ -50,6 +58,7 @@ const JudgePanel = () => {
         setScore({ ...score, score: total });
     };
 
+    // ✅ FIXED - Added const response = await axios.post()
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -66,6 +75,7 @@ const JudgePanel = () => {
         setLoading(true);
 
         try {
+            const token = localStorage.getItem('token');
             const payload = {
                 registration_code: code,
                 judge_name: score.judge_name,
@@ -74,7 +84,9 @@ const JudgePanel = () => {
                 criteria_scores: criteriaScores
             };
 
-            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+            const response = await axios.post(`${API_URL}/api/judge/score`, payload, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
             if (response.data.success) {
                 toast.success('Score submitted successfully! ✅');
@@ -83,6 +95,7 @@ const JudgePanel = () => {
                 setCriteriaScores({});
             }
         } catch (error) {
+            console.error('Submit Error:', error);
             toast.error(error.response?.data?.message || 'Failed to submit score');
         } finally {
             setLoading(false);

@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
+// ✅ ADD THIS - API URL at the top
+const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+
 const Winners = () => {
     const { grade } = useParams();
     const navigate = useNavigate();
@@ -13,13 +16,18 @@ const Winners = () => {
         fetchWinners();
     }, [grade]);
 
+    // ✅ FIXED - Added const response = await axios.get()
     const fetchWinners = async () => {
         try {
-            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/api/admin/winners/${grade}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (response.data.success) {
                 setWinners(response.data.winners);
             }
         } catch (error) {
+            console.error('Fetch Winners Error:', error);
             toast.error('Failed to fetch winners');
         } finally {
             setLoading(false);

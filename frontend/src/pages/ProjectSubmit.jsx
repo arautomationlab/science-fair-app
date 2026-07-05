@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
+// ✅ ADD THIS - API URL at the top
+const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+
 const ProjectSubmit = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -40,6 +43,7 @@ const ProjectSubmit = () => {
         setImagePreviews(newPreviews);
     };
 
+    // ✅ FIXED - Added const response = await axios.post()
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -66,7 +70,13 @@ const ProjectSubmit = () => {
                 formDataToSend.append('images', image);
             });
 
-            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+            // ✅ FIXED - Added const response = await axios.post()
+            const response = await axios.post(`${API_URL}/api/projects/submit`, formDataToSend, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
 
             if (response.data.success) {
                 toast.success('Project submitted successfully! 🎉');
