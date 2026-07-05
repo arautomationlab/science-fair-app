@@ -4,6 +4,9 @@ import toast from 'react-hot-toast';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 
+// ✅ ADD THIS - API URL
+const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+
 const TeacherDashboard = () => {
     const navigate = useNavigate();
     const [projects, setProjects] = useState([]);
@@ -34,8 +37,9 @@ const TeacherDashboard = () => {
     const fetchProjects = async () => {
         try {
             const token = localStorage.getItem('token');
+            // ✅ FIXED
             const response = await axios.get(
-                'http://localhost:5000/api/teacher/my-projects',
+                `${API_URL}/api/teacher/my-projects`,
                 {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }
@@ -55,8 +59,9 @@ const TeacherDashboard = () => {
     const fetchStats = async () => {
         try {
             const token = localStorage.getItem('token');
+            // ✅ FIXED
             const response = await axios.get(
-                'http://localhost:5000/api/teacher/my-stats',
+                `${API_URL}/api/teacher/my-stats`,
                 {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }
@@ -66,6 +71,7 @@ const TeacherDashboard = () => {
             }
         } catch (error) {
             console.error('Fetch Stats Error:', error);
+            toast.error('Failed to fetch stats');
         }
     };
 
@@ -115,7 +121,6 @@ const TeacherDashboard = () => {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Projects');
         
-        // Auto column widths
         const colWidths = [
             { wch: 25 }, { wch: 30 }, { wch: 8 }, { wch: 10 },
             { wch: 30 }, { wch: 25 }, { wch: 20 }, { wch: 25 },
@@ -129,7 +134,6 @@ const TeacherDashboard = () => {
         setShowExportModal(false);
     };
 
-    // Export to PDF (using print)
     const exportToPDF = () => {
         window.print();
         setShowExportModal(false);
@@ -143,7 +147,6 @@ const TeacherDashboard = () => {
         navigate('/login');
     };
 
-    // Get unique grades and divisions for filters
     const uniqueGrades = [...new Set(projects.map(p => p.grade))].sort();
     const uniqueDivisions = [...new Set(projects.map(p => p.division))].sort();
 

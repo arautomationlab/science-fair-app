@@ -66,16 +66,7 @@ const ProjectSubmit = () => {
                 formDataToSend.append('images', image);
             });
 
-            const response = await axios.post(
-                'http://localhost:5000/api/projects/submit',
-                formDataToSend,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'multipart/form-data'
-                    }
-                }
-            );
+            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
 
             if (response.data.success) {
                 toast.success('Project submitted successfully! 🎉');

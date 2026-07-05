@@ -31,9 +31,7 @@ const JudgePanel = () => {
 
     const fetchProject = async () => {
         try {
-            const response = await axios.get(
-                `http://localhost:5000/api/projects/${code}`
-            );
+            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
             if (response.data.success) {
                 setProject(response.data.data);
             }
@@ -76,10 +74,7 @@ const JudgePanel = () => {
                 criteria_scores: criteriaScores
             };
 
-            const response = await axios.post(
-                'http://localhost:5000/api/judge/score',
-                payload
-            );
+            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
 
             if (response.data.success) {
                 toast.success('Score submitted successfully! ✅');

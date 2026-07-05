@@ -18,9 +18,7 @@ const PublicProject = () => {
 
     const fetchProject = async () => {
         try {
-            const response = await axios.get(
-                `http://localhost:5000/api/projects/public/${code}`
-            );
+            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
             if (response.data.success) {
                 setProject(response.data.data);
             }
@@ -39,14 +37,7 @@ const PublicProject = () => {
 
         setSubmittingRating(true);
         try {
-            const response = await axios.post(
-                'http://localhost:5000/api/ratings/rate',
-                {
-                    registration_code: code,
-                    stars: stars,
-                    comment: comment
-                }
-            );
+            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
 
             if (response.data.success) {
                 toast.success('Thank you for your rating! 🌟');

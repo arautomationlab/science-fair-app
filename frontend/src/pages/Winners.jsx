@@ -15,9 +15,7 @@ const Winners = () => {
 
     const fetchWinners = async () => {
         try {
-            const response = await axios.get(
-                `http://localhost:5000/api/admin/winners/${grade}`
-            );
+            const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
             if (response.data.success) {
                 setWinners(response.data.winners);
             }

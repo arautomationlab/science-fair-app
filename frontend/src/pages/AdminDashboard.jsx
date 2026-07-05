@@ -4,6 +4,9 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 
+// ✅ ADD THIS - API URL
+const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
+
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [projects, setProjects] = useState([]);
@@ -35,10 +38,11 @@ const AdminDashboard = () => {
         try {
             const token = localStorage.getItem('token');
             const [projectsRes, teachersRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/admin/all-projects', {
+                // ✅ FIXED - Using API_URL
+                axios.get(`${API_URL}/api/admin/all-projects`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                axios.get('http://localhost:5000/api/admin/teachers', {
+                axios.get(`${API_URL}/api/admin/teachers`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 })
             ]);
