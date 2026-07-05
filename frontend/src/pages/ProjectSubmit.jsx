@@ -54,17 +54,24 @@ const ProjectSubmit = () => {
         try {
             const token = localStorage.getItem('token');
             
-            // Get user data to get registration_code
+            // ✅ Get user data from localStorage
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
-            const registrationCode = userData.registration_code || userData.registrationCode;
+            
+            // ✅ Try to get registration_code from multiple places
+            const registrationCode = userData.registration_code || 
+                                    userData.registrationCode || 
+                                    userData.registrationcode;
+            
+            console.log('🔍 User data from localStorage:', userData);
+            console.log('🔑 Registration code found:', registrationCode);
             
             if (!registrationCode) {
-                toast.error('User data not found. Please login again.');
+                toast.error('Registration code not found. Please login again.');
                 setLoading(false);
                 return;
             }
 
-            // Prepare the payload
+            // ✅ Prepare the payload
             const payload = {
                 registration_code: registrationCode,
                 aim: formData.aim,

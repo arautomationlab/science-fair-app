@@ -3,22 +3,23 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 
-// Submit Project Details (Enhanced)
+// Submit Project Details
 router.post('/submit', authenticate, async (req, res) => {
     try {
         console.log('📥 Project submission received');
         console.log('📦 Body:', req.body);
-        console.log('👤 User:', req.user);
+        console.log('👤 User from token:', req.user);
 
         const { 
             registration_code, aim, materials, procedure, conclusion, 
             abstract, video_link, images 
         } = req.body;
         
-        // Get group_id from registration_code
-        let groupId = req.user.id;
+        console.log('🔑 Registration code from body:', registration_code);
+
+        // ✅ First, try to find the group by registration_code from the body
+        let groupId = null;
         
-        // If registration_code is provided, find the group
         if (registration_code) {
             const groupResult = await pool.query(
                 'SELECT id FROM groups WHERE registration_code = $1',
@@ -26,12 +27,31 @@ router.post('/submit', authenticate, async (req, res) => {
             );
             if (groupResult.rows.length > 0) {
                 groupId = groupResult.rows[0].id;
+                console.log('✅ Group found by registration_code:', groupId);
             } else {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Group not found for this registration code'
-                });
+                console.log('❌ No group found with registration_code:', registration_code);
             }
+        }
+        
+        // ✅ If not found by registration_code, try using the user ID from token
+        if (!groupId && req.user && req.user.id) {
+            const groupResult = await pool.query(
+                'SELECT id FROM groups WHERE id = $1',
+                [req.user.id]
+            );
+            if (groupResult.rows.length > 0) {
+                groupId = groupResult.rows[0].id;
+                console.log('✅ Group found by user ID:', groupId);
+            }
+        }
+
+        if (!groupId) {
+            console.log('❌ No group found. Registration code:', registration_code);
+            console.log('❌ User from token:', req.user);
+            return res.status(404).json({
+                success: false,
+                message: 'Group not found for this registration code. Please ensure you are logged in correctly.'
+            });
         }
 
         // Check if project already exists
@@ -122,7 +142,7 @@ router.get('/:code', async (req, res) => {
     }
 });
 
-// Get Public Project View (with all details)
+// Get Public Project View
 router.get('/public/:code', async (req, res) => {
     try {
         const { code } = req.params;
@@ -149,7 +169,6 @@ router.get('/public/:code', async (req, res) => {
             });
         }
 
-        // Remove sensitive data
         delete result.rows[0].password;
 
         res.json({
