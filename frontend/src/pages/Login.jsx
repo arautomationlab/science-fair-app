@@ -29,13 +29,14 @@ const Login = () => {
             let endpoint = '';
             let payload = {};
 
-            if (userType === 'student') {
-                endpoint = '/api/auth/login/student';
-                payload = {
-                    registration_code: formData.registration_code,
-                    password: formData.password
-                };
-            } else if (userType === 'teacher') {
+            // Student Login - Already correct in your Login.jsx
+        if (userType === 'student') {
+            endpoint = '/api/auth/login/student';
+            payload = {
+                registration_code: formData.registration_code,
+                password: formData.password
+            };
+        } else if (userType === 'teacher') {
                 endpoint = '/api/auth/login/teacher';
                 payload = {
                     username: formData.username,
@@ -56,10 +57,12 @@ const Login = () => {
             );
 
             if (response.data.success) {
-                const { token, user } = response.data.data;
-                localStorage.setItem('token', token);
-                localStorage.setItem('user', JSON.stringify(user));
-                localStorage.setItem('role', user.role);
+                    const { token, user } = response.data.data;
+                    localStorage.setItem('token', token);
+                    localStorage.setItem('user', JSON.stringify(user));
+                    localStorage.setItem('role', user.role);
+                    // ✅ Also store group data for dashboard
+                    localStorage.setItem('group', JSON.stringify(user));
 
                 toast.success(`Welcome ${user.full_name || user.registration_code || 'User'}!`);
 
