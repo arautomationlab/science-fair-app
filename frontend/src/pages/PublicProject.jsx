@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -23,18 +23,30 @@ const PublicProject = () => {
     const [submittingJudge, setSubmittingJudge] = useState(false);
 
     useEffect(() => {
-        fetchProject();
+        if (code) {
+            console.log('🔍 Fetching project with code:', code);
+            fetchProject();
+        } else {
+            console.error('❌ No code provided in URL');
+            setLoading(false);
+        }
     }, [code]);
 
     const fetchProject = async () => {
         try {
+            console.log('📤 API URL:', API_URL);
             const response = await axios.get(`${API_URL}/api/projects/public/${code}`);
+            console.log('📥 Response:', response.data);
+            
             if (response.data.success) {
                 setProject(response.data.data);
+            } else {
+                toast.error('Project not found');
             }
         } catch (error) {
-            console.error('Fetch Project Error:', error);
-            toast.error('Project not found');
+            console.error('❌ Fetch Project Error:', error);
+            console.error('Error Response:', error.response?.data);
+            toast.error(error.response?.data?.message || 'Project not found');
         } finally {
             setLoading(false);
         }
@@ -43,7 +55,6 @@ const PublicProject = () => {
     // Get YouTube thumbnail from video link
     const getYouTubeThumbnail = (url) => {
         if (!url) return null;
-        // Match YouTube video ID from various URL formats
         const patterns = [
             /(?:youtube\.com\/watch\?v=)([\w-]+)/,
             /(?:youtu\.be\/)([\w-]+)/,
@@ -143,6 +154,13 @@ const PublicProject = () => {
             <div className="max-w-4xl mx-auto p-6 text-center">
                 <h2 className="text-2xl font-bold text-red-600">Project Not Found</h2>
                 <p className="text-gray-600 mt-2">The project you're looking for doesn't exist.</p>
+                <p className="text-sm text-gray-400 mt-4">Code: {code}</p>
+                <button
+                    onClick={() => window.history.back()}
+                    className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                    Go Back
+                </button>
             </div>
         );
     }
@@ -178,7 +196,7 @@ const PublicProject = () => {
                 </div>
             </div>
 
-            {/* Main Content - Two Column Layout */}
+            {/* Main Content */}
             <div className="bg-white shadow-lg rounded-b-lg p-6">
                 <div className="grid md:grid-cols-3 gap-8">
                     {/* LEFT COLUMN - Project Details (2/3 width) */}
@@ -268,7 +286,7 @@ const PublicProject = () => {
                         {/* Images */}
                         <div>
                             <h3 className="font-bold text-gray-700 mb-2">🖼️ Images</h3>
-                            {images.length > 0 ? (
+                            {images && images.length > 0 ? (
                                 <div className="space-y-2">
                                     {images.map((img, idx) => (
                                         <a 
@@ -282,6 +300,9 @@ const PublicProject = () => {
                                                 src={img} 
                                                 alt={`Project ${idx + 1}`} 
                                                 className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition cursor-pointer"
+                                                onError={(e) => {
+                                                    e.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Found';
+                                                }}
                                             />
                                         </a>
                                     ))}

@@ -181,7 +181,14 @@ const Dashboard = () => {
                     </button>
                     {group.registration_code && (
                         <button
-                            onClick={() => window.open(`/project/${group.registration_code}`, '_blank')}
+                            onClick={() => {
+                                const code = group.registration_code || group.registrationCode;
+                                if (code) {
+                                    window.open(`/project/${code}`, '_blank');
+                                } else {
+                                    toast.error('Registration code not found');
+                                }
+                            }}
                             className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
                         >
                             🔍 View Public Project
