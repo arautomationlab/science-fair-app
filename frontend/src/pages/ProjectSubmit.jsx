@@ -53,48 +53,39 @@ const ProjectSubmit = () => {
 
         try {
             const token = localStorage.getItem('token');
-            
-            // ✅ Get user data from localStorage
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
-            const groupData = JSON.parse(localStorage.getItem('group') || '{}');
-            
-            // ✅ Try multiple places for registration_code
-            const registrationCode = userData.registration_code || 
-                                    groupData.registration_code || 
-                                    userData.registrationCode || 
-                                    userData.registrationcode;
-            
-            console.log('🔍 User data:', userData);
-            console.log('🔍 Group data:', groupData);
-            console.log('🔑 Registration code found:', registrationCode);
-            
+            const registrationCode = userData.registration_code || userData.registrationCode;
+
             if (!registrationCode) {
                 toast.error('Registration code not found. Please login again.');
                 setLoading(false);
                 return;
             }
 
-            // ✅ Prepare payload - ONLY send registration_code (not group_id)
-            const payload = {
-                registration_code: registrationCode,
-                aim: formData.aim,
-                materials: formData.materials,
-                procedure: formData.procedure,
-                conclusion: formData.conclusion,
-                abstract: formData.abstract,
-                video_link: formData.video_link,
-                images: images.map(img => img.name)
-            };
+            // ✅ Create FormData for file upload
+            const formDataToSend = new FormData();
+            formDataToSend.append('registration_code', registrationCode);
+            formDataToSend.append('aim', formData.aim);
+            formDataToSend.append('materials', formData.materials);
+            formDataToSend.append('procedure', formData.procedure);
+            formDataToSend.append('conclusion', formData.conclusion);
+            formDataToSend.append('abstract', formData.abstract || '');
+            formDataToSend.append('video_link', formData.video_link || '');
 
-            console.log('📤 Submitting payload:', JSON.stringify(payload, null, 2));
+            // ✅ Append images
+            images.forEach(image => {
+                formDataToSend.append('images', image);
+            });
+
+            console.log('📤 Submitting project...');
 
             const response = await axios.post(
                 `${API_URL}/api/projects/submit`,
-                payload,
+                formDataToSend,
                 {
                     headers: { 
                         'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'multipart/form-data'
                     }
                 }
             );
@@ -103,7 +94,6 @@ const ProjectSubmit = () => {
 
             if (response.data.success) {
                 toast.success('Project submitted successfully! 🎉');
-                // Update local storage
                 const updatedUser = { ...userData, project_submitted: true };
                 localStorage.setItem('user', JSON.stringify(updatedUser));
                 localStorage.setItem('group', JSON.stringify(updatedUser));
@@ -125,6 +115,7 @@ const ProjectSubmit = () => {
             <h2 className="text-2xl font-bold mb-6">📝 Submit Your Project</h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Project Aim */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">🎯 Aim / Objective *</label>
                     <textarea
@@ -138,6 +129,7 @@ const ProjectSubmit = () => {
                     />
                 </div>
 
+                {/* Materials Required */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">🧪 Materials Required *</label>
                     <textarea
@@ -152,6 +144,7 @@ const ProjectSubmit = () => {
                     <p className="text-xs text-gray-500 mt-1">Separate items with commas or list each on a new line</p>
                 </div>
 
+                {/* Procedure */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">📋 Procedure / Methodology *</label>
                     <textarea
@@ -166,6 +159,7 @@ const ProjectSubmit = () => {
                     <p className="text-xs text-gray-500 mt-1">Number each step clearly</p>
                 </div>
 
+                {/* Conclusion */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">✅ Conclusion / Results *</label>
                     <textarea
@@ -179,6 +173,7 @@ const ProjectSubmit = () => {
                     />
                 </div>
 
+                {/* Abstract (Optional) */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">📄 Abstract (Optional)</label>
                     <textarea
@@ -191,6 +186,7 @@ const ProjectSubmit = () => {
                     />
                 </div>
 
+                {/* Images */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">🖼️ Upload Images</label>
                     <input
@@ -202,6 +198,7 @@ const ProjectSubmit = () => {
                     />
                     <p className="text-xs text-gray-500 mt-1">Upload photos of your project (Max 5 images)</p>
                     
+                    {/* Image Previews */}
                     {imagePreviews.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-3">
                             {imagePreviews.map((preview, index) => (
@@ -224,6 +221,7 @@ const ProjectSubmit = () => {
                     )}
                 </div>
 
+                {/* Video Link */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">🎥 Video Link (Optional)</label>
                     <input
@@ -234,7 +232,7 @@ const ProjectSubmit = () => {
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         placeholder="https://youtube.com/watch?v=..."
                     />
-                    <p className="text-xs text-gray-500 mt-1">YouTube or Google Drive link</p>
+                    <p className="text-xs text-gray-500 mt-1">YouTube or Google Drive link to project demo video</p>
                 </div>
 
                 <button
