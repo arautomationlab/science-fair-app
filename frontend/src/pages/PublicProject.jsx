@@ -23,36 +23,45 @@ const PublicProject = () => {
     const [submittingJudge, setSubmittingJudge] = useState(false);
 
     useEffect(() => {
+        console.log('🔍 PublicProject component mounted');
+        console.log('🔍 Code from URL params:', code);
+        
         if (code) {
-            console.log('🔍 Fetching project with code:', code);
             fetchProject();
         } else {
             console.error('❌ No code provided in URL');
+            toast.error('Invalid project code');
             setLoading(false);
         }
     }, [code]);
 
     const fetchProject = async () => {
         try {
+            console.log('📤 Fetching project with code:', code);
             console.log('📤 API URL:', API_URL);
+            
             const response = await axios.get(`${API_URL}/api/projects/public/${code}`);
-            console.log('📥 Response:', response.data);
+            console.log('📥 Response status:', response.status);
+            console.log('📥 Response data:', response.data);
             
             if (response.data.success) {
                 setProject(response.data.data);
+                console.log('✅ Project loaded successfully');
             } else {
+                console.error('❌ API returned success: false');
                 toast.error('Project not found');
             }
         } catch (error) {
             console.error('❌ Fetch Project Error:', error);
-            console.error('Error Response:', error.response?.data);
-            toast.error(error.response?.data?.message || 'Project not found');
+            console.error('❌ Error Response:', error.response?.data);
+            console.error('❌ Error Status:', error.response?.status);
+            toast.error(error.response?.data?.message || 'Failed to load project');
         } finally {
             setLoading(false);
         }
     };
 
-    // Get YouTube thumbnail from video link
+    // Get YouTube thumbnail
     const getYouTubeThumbnail = (url) => {
         if (!url) return null;
         const patterns = [
@@ -144,6 +153,7 @@ const PublicProject = () => {
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-4 text-gray-600">Loading project...</p>
+                    <p className="text-xs text-gray-400 mt-2">Code: {code}</p>
                 </div>
             </div>
         );
@@ -155,6 +165,11 @@ const PublicProject = () => {
                 <h2 className="text-2xl font-bold text-red-600">Project Not Found</h2>
                 <p className="text-gray-600 mt-2">The project you're looking for doesn't exist.</p>
                 <p className="text-sm text-gray-400 mt-4">Code: {code}</p>
+                <div className="mt-4 p-4 bg-gray-100 rounded-lg text-left">
+                    <p className="text-sm font-semibold">Debug Info:</p>
+                    <p className="text-xs text-gray-600">API URL: {API_URL}</p>
+                    <p className="text-xs text-gray-600">Code: {code}</p>
+                </div>
                 <button
                     onClick={() => window.history.back()}
                     className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -168,6 +183,7 @@ const PublicProject = () => {
     const students = JSON.parse(project.students_data || '[]');
     const images = project.images || [];
     const youtubeThumbnail = getYouTubeThumbnail(project.video_link);
+    const hasProjectDetails = project.aim || project.materials || project.procedure || project.conclusion;
 
     return (
         <div className="max-w-6xl mx-auto p-6">
@@ -198,150 +214,160 @@ const PublicProject = () => {
 
             {/* Main Content */}
             <div className="bg-white shadow-lg rounded-b-lg p-6">
-                <div className="grid md:grid-cols-3 gap-8">
-                    {/* LEFT COLUMN - Project Details (2/3 width) */}
-                    <div className="md:col-span-2 space-y-4">
-                        {/* Abstract */}
-                        {project.abstract && (
-                            <div>
-                                <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
-                                    📄 Abstract
-                                </h3>
-                                <p className="text-gray-600 mt-1">{project.abstract}</p>
-                            </div>
-                        )}
-
-                        {/* Aim */}
-                        {project.aim && (
-                            <div>
-                                <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
-                                    🎯 Aim / Objective
-                                </h3>
-                                <p className="text-gray-600 mt-1">{project.aim}</p>
-                            </div>
-                        )}
-
-                        {/* Materials */}
-                        {project.materials && (
-                            <div>
-                                <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
-                                    🧪 Materials Required
-                                </h3>
-                                <div className="mt-1 flex flex-wrap gap-2">
-                                    {project.materials.split(',').map((item, idx) => (
-                                        <span key={idx} className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-700">
-                                            {item.trim()}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Procedure */}
-                        {project.procedure && (
-                            <div>
-                                <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
-                                    📋 Procedure
-                                </h3>
-                                <div className="mt-1 space-y-1">
-                                    {project.procedure.split('\n').filter(step => step.trim()).map((step, idx) => (
-                                        <div key={idx} className="flex gap-2 text-gray-600">
-                                            <span className="font-bold text-blue-600">{idx + 1}.</span>
-                                            <span>{step.trim()}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Conclusion */}
-                        {project.conclusion && (
-                            <div>
-                                <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
-                                    ✅ Conclusion / Results
-                                </h3>
-                                <p className="text-gray-600 mt-1">{project.conclusion}</p>
-                            </div>
-                        )}
-
-                        {/* Team Members */}
-                        <div className="bg-blue-50 p-4 rounded-lg">
-                            <h3 className="font-semibold text-gray-700 mb-2">👨‍👩‍👧‍👦 Team Members</h3>
-                            <div className="space-y-1">
-                                {students.map((student, idx) => (
-                                    <div key={idx} className="flex items-center gap-2">
-                                        <span className="text-blue-600">👤</span>
-                                        <span>{student.name}</span>
-                                        <span className="text-xs text-gray-500 ml-2">
-                                            Parent: {student.parent_name}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                {!hasProjectDetails ? (
+                    <div className="text-center py-8">
+                        <span className="text-6xl">📝</span>
+                        <h3 className="text-xl font-bold text-gray-700 mt-4">Project Details Not Submitted Yet</h3>
+                        <p className="text-gray-500 mt-2">The student has registered but hasn't submitted the project details yet.</p>
+                        <p className="text-sm text-gray-400 mt-1">Team Name: {project.team_name}</p>
+                        <p className="text-sm text-gray-400">Grade: {project.grade} - {project.division}</p>
                     </div>
-
-                    {/* RIGHT COLUMN - Images & Video (1/3 width) */}
-                    <div className="space-y-4">
-                        {/* Images */}
-                        <div>
-                            <h3 className="font-bold text-gray-700 mb-2">🖼️ Images</h3>
-                            {images && images.length > 0 ? (
-                                <div className="space-y-2">
-                                    {images.map((img, idx) => (
-                                        <a 
-                                            key={idx} 
-                                            href={img} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="block"
-                                        >
-                                            <img 
-                                                src={img} 
-                                                alt={`Project ${idx + 1}`} 
-                                                className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition cursor-pointer"
-                                                onError={(e) => {
-                                                    e.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Found';
-                                                }}
-                                            />
-                                        </a>
-                                    ))}
-                                    <p className="text-xs text-gray-400">Click image to view full size</p>
+                ) : (
+                    <div className="grid md:grid-cols-3 gap-8">
+                        {/* LEFT COLUMN - Project Details (2/3 width) */}
+                        <div className="md:col-span-2 space-y-4">
+                            {/* Abstract */}
+                            {project.abstract && (
+                                <div>
+                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
+                                        📄 Abstract
+                                    </h3>
+                                    <p className="text-gray-600 mt-1">{project.abstract}</p>
                                 </div>
-                            ) : (
-                                <div className="bg-gray-100 h-32 rounded-lg flex items-center justify-center">
-                                    <div className="text-center text-gray-400">
-                                        <span className="text-4xl">🖼️</span>
-                                        <p className="text-sm mt-1">No images uploaded</p>
+                            )}
+
+                            {/* Aim */}
+                            {project.aim && (
+                                <div>
+                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
+                                        🎯 Aim / Objective
+                                    </h3>
+                                    <p className="text-gray-600 mt-1">{project.aim}</p>
+                                </div>
+                            )}
+
+                            {/* Materials */}
+                            {project.materials && (
+                                <div>
+                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
+                                        🧪 Materials Required
+                                    </h3>
+                                    <div className="mt-1 flex flex-wrap gap-2">
+                                        {project.materials.split(',').map((item, idx) => (
+                                            <span key={idx} className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-700">
+                                                {item.trim()}
+                                            </span>
+                                        ))}
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Procedure */}
+                            {project.procedure && (
+                                <div>
+                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
+                                        📋 Procedure
+                                    </h3>
+                                    <div className="mt-1 space-y-1">
+                                        {project.procedure.split('\n').filter(step => step.trim()).map((step, idx) => (
+                                            <div key={idx} className="flex gap-2 text-gray-600">
+                                                <span className="font-bold text-blue-600">{idx + 1}.</span>
+                                                <span>{step.trim()}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Conclusion */}
+                            {project.conclusion && (
+                                <div>
+                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
+                                        ✅ Conclusion / Results
+                                    </h3>
+                                    <p className="text-gray-600 mt-1">{project.conclusion}</p>
                                 </div>
                             )}
                         </div>
 
-                        {/* Video */}
-                        {project.video_link && youtubeThumbnail && (
+                        {/* RIGHT COLUMN - Images & Video (1/3 width) */}
+                        <div className="space-y-4">
+                            {/* Images */}
                             <div>
-                                <h3 className="font-bold text-gray-700 mb-2">🎥 Project Video</h3>
-                                <a 
-                                    href={project.video_link} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="block relative group"
-                                >
-                                    <img 
-                                        src={youtubeThumbnail} 
-                                        alt="Video Thumbnail" 
-                                        className="w-full rounded-lg border border-gray-200 group-hover:opacity-80 transition"
-                                    />
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <div className="bg-red-600 text-white rounded-full p-3 shadow-lg group-hover:scale-110 transition">
-                                            ▶️
+                                <h3 className="font-bold text-gray-700 mb-2">🖼️ Images</h3>
+                                {images && images.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {images.map((img, idx) => (
+                                            <a 
+                                                key={idx} 
+                                                href={img} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="block"
+                                            >
+                                                <img 
+                                                    src={img} 
+                                                    alt={`Project ${idx + 1}`} 
+                                                    className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition cursor-pointer"
+                                                    onError={(e) => {
+                                                        e.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Found';
+                                                    }}
+                                                />
+                                            </a>
+                                        ))}
+                                        <p className="text-xs text-gray-400">Click image to view full size</p>
+                                    </div>
+                                ) : (
+                                    <div className="bg-gray-100 h-32 rounded-lg flex items-center justify-center">
+                                        <div className="text-center text-gray-400">
+                                            <span className="text-4xl">🖼️</span>
+                                            <p className="text-sm mt-1">No images uploaded</p>
                                         </div>
                                     </div>
-                                </a>
-                                <p className="text-xs text-gray-400 mt-1">Click to watch on YouTube</p>
+                                )}
                             </div>
-                        )}
+
+                            {/* Video */}
+                            {project.video_link && youtubeThumbnail && (
+                                <div>
+                                    <h3 className="font-bold text-gray-700 mb-2">🎥 Project Video</h3>
+                                    <a 
+                                        href={project.video_link} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="block relative group"
+                                    >
+                                        <img 
+                                            src={youtubeThumbnail} 
+                                            alt="Video Thumbnail" 
+                                            className="w-full rounded-lg border border-gray-200 group-hover:opacity-80 transition"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="bg-red-600 text-white rounded-full p-3 shadow-lg group-hover:scale-110 transition">
+                                                ▶️
+                                            </div>
+                                        </div>
+                                    </a>
+                                    <p className="text-xs text-gray-400 mt-1">Click to watch on YouTube</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Team Members - Always Show */}
+                <div className={`${hasProjectDetails ? 'mt-6 border-t pt-4' : 'mt-4'}`}>
+                    <h3 className="font-semibold text-gray-700 mb-2">👨‍👩‍👧‍👦 Team Members</h3>
+                    <div className="space-y-1">
+                        {students.map((student, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                                <span className="text-blue-600">👤</span>
+                                <span>{student.name}</span>
+                                <span className="text-xs text-gray-500 ml-2">
+                                    Parent: {student.parent_name}
+                                </span>
+                            </div>
+                        ))}
                     </div>
                 </div>
 

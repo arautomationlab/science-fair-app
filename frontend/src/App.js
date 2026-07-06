@@ -11,7 +11,7 @@ import ProjectSubmit from './pages/ProjectSubmit';
 import JudgePanel from './pages/JudgePanel';
 import AdminDashboard from './pages/AdminDashboard';
 import Winners from './pages/Winners';
-import PublicProject from './pages/PublicProject';
+import PublicProject from './pages/PublicProject'; // ✅ Make sure this is imported
 
 // Components
 import Navbar from './components/Navbar';
@@ -27,19 +27,10 @@ function App() {
         <Navbar />
         
         <main className="flex-grow">
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-            }}
-          />
+          <Toaster position="top-right" />
           
           <Routes>
-            {/* Homepage with Hero Banner Only */}
+            {/* Public Routes */}
             <Route path="/" element={
               <>
                 <HeroBanner />
@@ -52,23 +43,6 @@ function App() {
                       Register your team, submit innovative projects, 
                       and compete for the top position in the Science Fair!
                     </p>
-                    <div className="mt-8 flex flex-wrap justify-center gap-4">
-                      <div className="bg-blue-50 p-6 rounded-lg max-w-xs flex-1">
-                        <span className="text-4xl">📝</span>
-                        <h3 className="font-bold text-gray-700 mt-2">Register</h3>
-                        <p className="text-sm text-gray-500">Create your team</p>
-                      </div>
-                      <div className="bg-green-50 p-6 rounded-lg max-w-xs flex-1">
-                        <span className="text-4xl">💡</span>
-                        <h3 className="font-bold text-gray-700 mt-2">Submit</h3>
-                        <p className="text-sm text-gray-500">Upload your project</p>
-                      </div>
-                      <div className="bg-purple-50 p-6 rounded-lg max-w-xs flex-1">
-                        <span className="text-4xl">🏆</span>
-                        <h3 className="font-bold text-gray-700 mt-2">Win</h3>
-                        <p className="text-sm text-gray-500">Get recognized!</p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </>
@@ -76,20 +50,24 @@ function App() {
             
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            
+            {/* ✅ Public Project Page - No Login Required */}
             <Route path="/project/:code" element={<PublicProject />} />
+            
+            {/* Judge Panel - accessed via QR code */}
             <Route path="/judge/:code" element={<JudgePanel />} />
             
             {/* Student Routes */}
             <Route path="/dashboard" element={
-              <RoleRoute allowedRoles={['student']}>
+              <PrivateRoute>
                 <Dashboard />
-              </RoleRoute>
+              </PrivateRoute>
             } />
             
             <Route path="/submit-project" element={
-              <RoleRoute allowedRoles={['student']}>
+              <PrivateRoute>
                 <ProjectSubmit />
-              </RoleRoute>
+              </PrivateRoute>
             } />
             
             {/* Teacher Routes */}
@@ -104,7 +82,7 @@ function App() {
               <RoleRoute allowedRoles={['admin']}>
                 <AdminDashboard />
               </RoleRoute>
-             } />
+            } />
             
             <Route path="/admin/winners/:grade" element={
               <RoleRoute allowedRoles={['admin']}>
