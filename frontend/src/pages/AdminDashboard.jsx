@@ -65,32 +65,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const fetchAllData = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const [projectsRes, teachersRes] = await Promise.all([
-                axios.get(`${API_URL}/api/admin/all-projects`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }),
-                axios.get(`${API_URL}/api/admin/teachers`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-            ]);
-
-            if (projectsRes.data.success) {
-                setProjects(projectsRes.data.data);
-                setFilteredProjects(projectsRes.data.data);
-            }
-            if (teachersRes.data.success) setTeachers(teachersRes.data.data);
-        } catch (error) {
-            console.error('Fetch Error:', error);
-            toast.error('Failed to fetch data');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const applyFilters = () => {
+        const applyFilters = () => {
         let filtered = [...projects];
 
         if (filters.grade) {

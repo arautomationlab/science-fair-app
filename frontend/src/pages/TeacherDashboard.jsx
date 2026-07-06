@@ -62,29 +62,7 @@ const TeacherDashboard = () => {
         }
     };
 
-    const fetchProjects = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            // ✅ FIXED
-            const response = await axios.get(
-                `${API_URL}/api/teacher/my-projects`,
-                {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }
-            );
-            if (response.data.success) {
-                setProjects(response.data.data);
-                setFilteredProjects(response.data.data);
-            }
-        } catch (error) {
-            console.error('Fetch Projects Error:', error);
-            toast.error('Failed to fetch projects');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const fetchStats = async () => {
+        const fetchStats = async () => {
         try {
             const token = localStorage.getItem('token');
             // ✅ FIXED
