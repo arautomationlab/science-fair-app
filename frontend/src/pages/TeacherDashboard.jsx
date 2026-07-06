@@ -108,20 +108,39 @@ const TeacherDashboard = () => {
 
     // Export to Excel
     const exportToExcel = () => {
-        const exportData = filteredProjects.map(p => ({
-            'Team Name': p.team_name,
-            'Project Title': p.project_title,
-            'Grade': p.grade,
-            'Division': p.division,
-            'Students': JSON.parse(p.students_data || '[]').map(s => s.name).join(', '),
-            'Parents': JSON.parse(p.students_data || '[]').map(s => s.parent_name).join(', '),
-            'Parent Contacts': JSON.parse(p.students_data || '[]').map(s => s.parent_phone).join(', '),
-            'Teacher Guide': p.teacher_guide || 'N/A',
-            'Status': p.project_submitted ? 'Submitted' : 'Pending',
-            'Average Score': p.average_score ? Math.round(p.average_score) + '%' : 'Not yet',
-            'Registration Code': p.registration_code,
-            'Created': new Date(p.created_at).toLocaleDateString()
-        }));
+        const exportData = filteredProjects.map(p => {
+            // ✅ Handle students_data safely
+            let students = [];
+            try {
+                if (typeof p.students_data === 'string') {
+                    students = JSON.parse(p.students_data || '[]');
+                } else if (Array.isArray(p.students_data)) {
+                    students = p.students_data;
+                } else if (p.students_data && typeof p.students_data === 'object') {
+                    students = Object.values(p.students_data);
+                } else {
+                    students = [];
+                }
+            } catch (e) {
+                console.error('Failed to parse students_data:', e);
+                students = [];
+            }
+
+            return {
+                'Team Name': p.team_name || '',
+                'Project Title': p.project_title || '',
+                'Grade': p.grade || '',
+                'Division': p.division || '',
+                'Students': students.map(s => s.name || '').join(', '),
+                'Parents': students.map(s => s.parent_name || '').join(', '),
+                'Parent Contacts': students.map(s => s.parent_phone || '').join(', '),
+                'Teacher Guide': p.teacher_guide || 'N/A',
+                'Status': p.project_submitted ? 'Submitted' : 'Pending',
+                'Average Score': p.average_score ? Math.round(p.average_score) + '%' : 'Not yet',
+                'Registration Code': p.registration_code || '',
+                'Created': p.created_at ? new Date(p.created_at).toLocaleDateString() : ''
+            };
+        });
 
         const ws = XLSX.utils.json_to_sheet(exportData);
         const wb = XLSX.utils.book_new();
@@ -288,54 +307,71 @@ const TeacherDashboard = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredProjects.map((project, index) => (
-                                    <tr key={project.id} className="hover:bg-gray-50">
-                                        <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
-                                        <td className="px-4 py-3">
-                                            <div className="font-medium">{project.team_name}</div>
-                                            <div className="text-sm text-gray-500">{project.project_title}</div>
-                                        </td>
-                                        <td className="px-4 py-3">{project.grade} - {project.division}</td>
-                                        <td className="px-4 py-3">
-                                            {JSON.parse(project.students_data || '[]').map(s => s.name).join(', ')}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <span className={`px-2 py-1 rounded-full text-xs ${
-                                                project.project_submitted 
-                                                    ? 'bg-green-100 text-green-800' 
-                                                    : 'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                                {project.project_submitted ? '✅ Submitted' : '⏳ Pending'}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            {project.average_score ? (
-                                                <span className="font-bold text-blue-600">
-                                                    {Math.round(project.average_score)}%
+                                filteredProjects.map((project, index) => {
+                                    // ✅ Safe parsing of students_data
+                                    let students = [];
+                                    try {
+                                        if (typeof project.students_data === 'string') {
+                                            students = JSON.parse(project.students_data || '[]');
+                                        } else if (Array.isArray(project.students_data)) {
+                                            students = project.students_data;
+                                        } else if (project.students_data && typeof project.students_data === 'object') {
+                                            students = Object.values(project.students_data);
+                                        }
+                                    } catch (e) {
+                                        console.error('Failed to parse students_data:', e);
+                                        students = [];
+                                    }
+
+                                    return (
+                                        <tr key={project.id} className="hover:bg-gray-50">
+                                            <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium">{project.team_name || 'N/A'}</div>
+                                                <div className="text-sm text-gray-500">{project.project_title || 'N/A'}</div>
+                                            </td>
+                                            <td className="px-4 py-3">{project.grade || 'N/A'} - {project.division || 'N/A'}</td>
+                                            <td className="px-4 py-3 text-sm">
+                                                {students.map(s => s.name || '').join(', ')}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                                    project.project_submitted 
+                                                        ? 'bg-green-100 text-green-800' 
+                                                        : 'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                    {project.project_submitted ? '✅ Submitted' : '⏳ Pending'}
                                                 </span>
-                                            ) : (
-                                                <span className="text-gray-400 text-sm">Not yet</span>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <Link
-                                                to={`/project/${project.registration_code}`}
-                                                className="text-blue-600 hover:text-blue-900 text-sm mr-2"
-                                            >
-                                                View
-                                            </Link>
-                                            <button
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(project.registration_code);
-                                                    toast.success('Code copied!');
-                                                }}
-                                                className="text-gray-600 hover:text-gray-900 text-sm"
-                                            >
-                                                Copy
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {project.average_score ? (
+                                                    <span className="font-bold text-blue-600">
+                                                        {Math.round(project.average_score)}%
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm">Not yet</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <button
+                                                    onClick={() => navigate(`/project/${project.registration_code}`)}
+                                                    className="text-blue-600 hover:text-blue-900 text-sm mr-2"
+                                                >
+                                                    View
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(project.registration_code || '');
+                                                        toast.success('Code copied!');
+                                                    }}
+                                                    className="text-gray-600 hover:text-gray-900 text-sm"
+                                                >
+                                                    Copy
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>
