@@ -11,11 +11,8 @@ router.get('/my-projects', authenticateTeacher, async (req, res) => {
 
         const result = await pool.query(
             `SELECT 
-                g.id, g.registration_code, g.team_name, g.project_title, 
-                g.grade, g.division, g.students_data, g.project_submitted,
-                g.created_at,
+                g.*,
                 pd.aim, pd.materials, pd.procedure, pd.conclusion,
-                pd.abstract as project_abstract, pd.images,
                 (SELECT AVG(score) FROM judge_scores WHERE group_id = g.id) as average_score,
                 (SELECT COUNT(*) FROM judge_scores WHERE group_id = g.id) as judge_count
             FROM groups g
@@ -40,7 +37,7 @@ router.get('/my-projects', authenticateTeacher, async (req, res) => {
     }
 });
 
-// Get Teacher's Project Statistics
+// Get Teacher Stats
 router.get('/my-stats', authenticateTeacher, async (req, res) => {
     try {
         const teacherId = req.user.id;
