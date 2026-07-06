@@ -151,6 +151,15 @@ const Dashboard = () => {
                             </p>
                         )}
                     </div>
+                    <div className="bg-indigo-50 p-4 rounded-lg col-span-2">
+                        <p className="text-sm text-gray-600">⭐ Parent Rating</p>
+                        <p className="text-xl font-bold text-indigo-600">
+                            {projectDetails?.average_rating || 0} ⭐ 
+                            <span className="text-sm font-normal text-gray-500 ml-2">
+                                ({projectDetails?.total_ratings || 0} ratings)
+                            </span>
+                        </p>
+                    </div>
                 </div>
 
                 <div className="mt-6 flex gap-4 flex-wrap">

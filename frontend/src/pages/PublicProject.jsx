@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// ✅ ADD THIS - API URL at the top
 const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
 
 const PublicProject = () => {
@@ -14,12 +13,19 @@ const PublicProject = () => {
     const [hoverRating, setHoverRating] = useState(0);
     const [comment, setComment] = useState('');
     const [submittingRating, setSubmittingRating] = useState(false);
+    const [judgeCode, setJudgeCode] = useState('');
+    const [showJudgePanel, setShowJudgePanel] = useState(false);
+    const [judgeScore, setJudgeScore] = useState({
+        judge_name: '',
+        score: '',
+        comments: ''
+    });
+    const [submittingJudge, setSubmittingJudge] = useState(false);
 
     useEffect(() => {
         fetchProject();
     }, [code]);
 
-    // ✅ FIXED - Added const response = await axios.get()
     const fetchProject = async () => {
         try {
             const response = await axios.get(`${API_URL}/api/projects/public/${code}`);
@@ -34,7 +40,24 @@ const PublicProject = () => {
         }
     };
 
-    // ✅ FIXED - Added const response = await axios.post()
+    // Get YouTube thumbnail from video link
+    const getYouTubeThumbnail = (url) => {
+        if (!url) return null;
+        // Match YouTube video ID from various URL formats
+        const patterns = [
+            /(?:youtube\.com\/watch\?v=)([\w-]+)/,
+            /(?:youtu\.be\/)([\w-]+)/,
+            /(?:youtube\.com\/embed\/)([\w-]+)/
+        ];
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match) {
+                return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+            }
+        }
+        return null;
+    };
+
     const handleRating = async (stars) => {
         if (!stars) {
             toast.error('Please select a rating');
@@ -53,13 +76,54 @@ const PublicProject = () => {
                 toast.success('Thank you for your rating! 🌟');
                 setRating(0);
                 setComment('');
-                fetchProject(); // Refresh to show updated ratings
+                fetchProject();
             }
         } catch (error) {
             console.error('Rating Error:', error);
             toast.error(error.response?.data?.message || 'Failed to submit rating');
         } finally {
             setSubmittingRating(false);
+        }
+    };
+
+    const handleJudgeSubmit = async (e) => {
+        e.preventDefault();
+        if (!judgeScore.judge_name || !judgeScore.score) {
+            toast.error('Please fill all judge fields');
+            return;
+        }
+
+        setSubmittingJudge(true);
+        try {
+            const response = await axios.post(`${API_URL}/api/judge/score`, {
+                registration_code: code,
+                judge_name: judgeScore.judge_name,
+                score: parseInt(judgeScore.score),
+                comments: judgeScore.comments
+            });
+
+            if (response.data.success) {
+                toast.success('Judge score submitted! ✅');
+                setJudgeScore({ judge_name: '', score: '', comments: '' });
+                setShowJudgePanel(false);
+                setJudgeCode('');
+                fetchProject();
+            }
+        } catch (error) {
+            console.error('Judge Error:', error);
+            toast.error(error.response?.data?.message || 'Failed to submit score');
+        } finally {
+            setSubmittingJudge(false);
+        }
+    };
+
+    const handleJudgeCodeSubmit = (e) => {
+        e.preventDefault();
+        if (judgeCode === 'JUDGE2026') {
+            setShowJudgePanel(true);
+            toast.success('Access granted!');
+        } else {
+            toast.error('Invalid judge code');
         }
     };
 
@@ -83,9 +147,9 @@ const PublicProject = () => {
         );
     }
 
-    // Parse students data
     const students = JSON.parse(project.students_data || '[]');
     const images = project.images || [];
+    const youtubeThumbnail = getYouTubeThumbnail(project.video_link);
 
     return (
         <div className="max-w-6xl mx-auto p-6">
@@ -114,64 +178,25 @@ const PublicProject = () => {
                 </div>
             </div>
 
-            {/* Main Content */}
+            {/* Main Content - Two Column Layout */}
             <div className="bg-white shadow-lg rounded-b-lg p-6">
-                {/* Image and Details Layout */}
-                <div className="grid md:grid-cols-2 gap-8">
-                    {/* Left Column - Images */}
-                    <div>
-                        {images.length > 0 ? (
-                            <div className="space-y-3">
-                                <img 
-                                    src={images[0]} 
-                                    alt="Project Main" 
-                                    className="w-full h-64 object-cover rounded-lg shadow-md"
-                                />
-                                {images.length > 1 && (
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {images.slice(1, 4).map((img, idx) => (
-                                            <img 
-                                                key={idx} 
-                                                src={img} 
-                                                alt={`Project ${idx + 2}`} 
-                                                className="h-20 w-full object-cover rounded-lg border border-gray-200"
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="bg-gray-100 h-64 rounded-lg flex items-center justify-center">
-                                <div className="text-center text-gray-400">
-                                    <span className="text-6xl">🖼️</span>
-                                    <p className="mt-2">No images uploaded</p>
-                                </div>
+                <div className="grid md:grid-cols-3 gap-8">
+                    {/* LEFT COLUMN - Project Details (2/3 width) */}
+                    <div className="md:col-span-2 space-y-4">
+                        {/* Abstract */}
+                        {project.abstract && (
+                            <div>
+                                <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
+                                    📄 Abstract
+                                </h3>
+                                <p className="text-gray-600 mt-1">{project.abstract}</p>
                             </div>
                         )}
 
-                        {/* Participants */}
-                        <div className="mt-4 bg-blue-50 p-4 rounded-lg">
-                            <h3 className="font-semibold text-gray-700 mb-2">👨‍👩‍👧‍👦 Team Members</h3>
-                            <div className="space-y-1">
-                                {students.map((student, idx) => (
-                                    <div key={idx} className="flex items-center gap-2">
-                                        <span className="text-blue-600">👤</span>
-                                        <span>{student.name}</span>
-                                        <span className="text-xs text-gray-500 ml-2">
-                                            Parent: {student.parent_name}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right Column - Project Details */}
-                    <div className="space-y-4">
                         {/* Aim */}
                         {project.aim && (
                             <div>
-                                <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                                <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
                                     🎯 Aim / Objective
                                 </h3>
                                 <p className="text-gray-600 mt-1">{project.aim}</p>
@@ -181,7 +206,7 @@ const PublicProject = () => {
                         {/* Materials */}
                         {project.materials && (
                             <div>
-                                <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                                <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
                                     🧪 Materials Required
                                 </h3>
                                 <div className="mt-1 flex flex-wrap gap-2">
@@ -197,7 +222,7 @@ const PublicProject = () => {
                         {/* Procedure */}
                         {project.procedure && (
                             <div>
-                                <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                                <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
                                     📋 Procedure
                                 </h3>
                                 <div className="mt-1 space-y-1">
@@ -214,59 +239,108 @@ const PublicProject = () => {
                         {/* Conclusion */}
                         {project.conclusion && (
                             <div>
-                                <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                                <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
                                     ✅ Conclusion / Results
                                 </h3>
                                 <p className="text-gray-600 mt-1">{project.conclusion}</p>
                             </div>
                         )}
 
-                        {/* Abstract */}
-                        {project.abstract && (
-                            <div>
-                                <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                                    📄 Abstract
-                                </h3>
-                                <p className="text-gray-600 mt-1">{project.abstract}</p>
+                        {/* Team Members */}
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                            <h3 className="font-semibold text-gray-700 mb-2">👨‍👩‍👧‍👦 Team Members</h3>
+                            <div className="space-y-1">
+                                {students.map((student, idx) => (
+                                    <div key={idx} className="flex items-center gap-2">
+                                        <span className="text-blue-600">👤</span>
+                                        <span>{student.name}</span>
+                                        <span className="text-xs text-gray-500 ml-2">
+                                            Parent: {student.parent_name}
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
-                        )}
+                        </div>
+                    </div>
 
-                        {/* Video Link */}
-                        {project.video_link && (
+                    {/* RIGHT COLUMN - Images & Video (1/3 width) */}
+                    <div className="space-y-4">
+                        {/* Images */}
+                        <div>
+                            <h3 className="font-bold text-gray-700 mb-2">🖼️ Images</h3>
+                            {images.length > 0 ? (
+                                <div className="space-y-2">
+                                    {images.map((img, idx) => (
+                                        <a 
+                                            key={idx} 
+                                            href={img} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="block"
+                                        >
+                                            <img 
+                                                src={img} 
+                                                alt={`Project ${idx + 1}`} 
+                                                className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition cursor-pointer"
+                                            />
+                                        </a>
+                                    ))}
+                                    <p className="text-xs text-gray-400">Click image to view full size</p>
+                                </div>
+                            ) : (
+                                <div className="bg-gray-100 h-32 rounded-lg flex items-center justify-center">
+                                    <div className="text-center text-gray-400">
+                                        <span className="text-4xl">🖼️</span>
+                                        <p className="text-sm mt-1">No images uploaded</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Video */}
+                        {project.video_link && youtubeThumbnail && (
                             <div>
-                                <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                                    🎥 Project Video
-                                </h3>
+                                <h3 className="font-bold text-gray-700 mb-2">🎥 Project Video</h3>
                                 <a 
                                     href={project.video_link} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline"
+                                    className="block relative group"
                                 >
-                                    Watch Demo Video →
-                                </a>
-                            </div>
-                        )}
-
-                        {/* Judge Scores */}
-                        {project.judge_scores && project.judge_scores.length > 0 && (
-                            <div className="border-t pt-4">
-                                <h3 className="font-bold text-gray-700 mb-2">📊 Judge Scores</h3>
-                                <div className="space-y-1">
-                                    {project.judge_scores.map((score, idx) => (
-                                        <div key={idx} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                                            <span className="font-medium">{score.judge_name}</span>
-                                            <span className="font-bold text-blue-600">{score.score}%</span>
+                                    <img 
+                                        src={youtubeThumbnail} 
+                                        alt="Video Thumbnail" 
+                                        className="w-full rounded-lg border border-gray-200 group-hover:opacity-80 transition"
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className="bg-red-600 text-white rounded-full p-3 shadow-lg group-hover:scale-110 transition">
+                                            ▶️
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
+                                </a>
+                                <p className="text-xs text-gray-400 mt-1">Click to watch on YouTube</p>
                             </div>
                         )}
                     </div>
                 </div>
 
+                {/* Judge Scores Display */}
+                {project.judge_scores && project.judge_scores.length > 0 && (
+                    <div className="mt-6 border-t pt-4">
+                        <h3 className="font-bold text-gray-700 mb-2">📊 Judge Scores</h3>
+                        <div className="space-y-1">
+                            {project.judge_scores.map((score, idx) => (
+                                <div key={idx} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+                                    <span className="font-medium">{score.judge_name}</span>
+                                    <span className="font-bold text-blue-600">{score.score}%</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Parent Rating Section */}
-                <div className="mt-8 border-t pt-6">
+                <div className="mt-6 border-t pt-6">
                     <h3 className="text-xl font-bold text-gray-700 mb-4">⭐ Rate This Project</h3>
                     <div className="flex flex-col md:flex-row gap-6 items-start">
                         <div className="flex-1">
@@ -312,6 +386,92 @@ const PublicProject = () => {
                             <p className="text-sm text-gray-500">{project.total_ratings || 0} ratings</p>
                         </div>
                     </div>
+                </div>
+
+                {/* Judge Panel Section */}
+                <div className="mt-6 border-t pt-6">
+                    <h3 className="text-xl font-bold text-gray-700 mb-4">👨‍⚖️ Judge Panel</h3>
+                    
+                    {!showJudgePanel ? (
+                        <form onSubmit={handleJudgeCodeSubmit} className="flex flex-wrap gap-4 items-end">
+                            <div className="flex-1 min-w-[200px]">
+                                <label className="block text-sm font-medium text-gray-700">Enter Judge Access Code</label>
+                                <input
+                                    type="password"
+                                    value={judgeCode}
+                                    onChange={(e) => setJudgeCode(e.target.value)}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    placeholder="Enter the judge code"
+                                    required
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+                            >
+                                Access Judge Panel
+                            </button>
+                        </form>
+                    ) : (
+                        <form onSubmit={handleJudgeSubmit} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Judge Name *</label>
+                                    <input
+                                        type="text"
+                                        value={judgeScore.judge_name}
+                                        onChange={(e) => setJudgeScore({ ...judgeScore, judge_name: e.target.value })}
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        placeholder="Enter your name"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Score (0-100) *</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        value={judgeScore.score}
+                                        onChange={(e) => setJudgeScore({ ...judgeScore, score: e.target.value })}
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        placeholder="Enter score"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Comments</label>
+                                <textarea
+                                    value={judgeScore.comments}
+                                    onChange={(e) => setJudgeScore({ ...judgeScore, comments: e.target.value })}
+                                    rows="2"
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    placeholder="Additional comments..."
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    type="submit"
+                                    disabled={submittingJudge}
+                                    className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
+                                >
+                                    {submittingJudge ? 'Submitting...' : 'Submit Judge Score ✅'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowJudgePanel(false);
+                                        setJudgeCode('');
+                                    }}
+                                    className="bg-gray-400 text-white px-6 py-2 rounded-md hover:bg-gray-500"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    )}
+                    <p className="text-xs text-gray-400 mt-2">🔑 Judges: Contact the administrator for the access code</p>
                 </div>
             </div>
         </div>
