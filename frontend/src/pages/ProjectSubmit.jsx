@@ -56,13 +56,16 @@ const ProjectSubmit = () => {
             
             // ✅ Get user data from localStorage
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const groupData = JSON.parse(localStorage.getItem('group') || '{}');
             
-            // ✅ Try to get registration_code from multiple places
+            // ✅ Try multiple places for registration_code
             const registrationCode = userData.registration_code || 
+                                    groupData.registration_code || 
                                     userData.registrationCode || 
                                     userData.registrationcode;
             
-            console.log('🔍 User data from localStorage:', userData);
+            console.log('🔍 User data:', userData);
+            console.log('🔍 Group data:', groupData);
             console.log('🔑 Registration code found:', registrationCode);
             
             if (!registrationCode) {
@@ -71,9 +74,13 @@ const ProjectSubmit = () => {
                 return;
             }
 
-            // ✅ Prepare the payload
+            // ✅ Get group ID from the user data or group data
+            const groupId = userData.id || groupData.id;
+            
+            // ✅ Prepare payload with both registration_code and group_id
             const payload = {
                 registration_code: registrationCode,
+                group_id: groupId,
                 aim: formData.aim,
                 materials: formData.materials,
                 procedure: formData.procedure,
@@ -83,7 +90,7 @@ const ProjectSubmit = () => {
                 images: images.map(img => img.name)
             };
 
-            console.log('📤 Submitting project data:', payload);
+            console.log('📤 Submitting payload:', payload);
 
             const response = await axios.post(
                 `${API_URL}/api/projects/submit`,

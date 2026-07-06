@@ -11,48 +11,69 @@ router.post('/submit', authenticate, async (req, res) => {
         console.log('👤 User from token:', req.user);
 
         const { 
-            registration_code, aim, materials, procedure, conclusion, 
+            registration_code, group_id, aim, materials, procedure, conclusion, 
             abstract, video_link, images 
         } = req.body;
         
         console.log('🔑 Registration code from body:', registration_code);
+        console.log('🆔 Group ID from body:', group_id);
 
-        // ✅ First, try to find the group by registration_code from the body
+        // ✅ First, try to find the group by registration_code
         let groupId = null;
+        let group = null;
         
         if (registration_code) {
             const groupResult = await pool.query(
-                'SELECT id FROM groups WHERE registration_code = $1',
+                'SELECT id, registration_code, team_name FROM groups WHERE registration_code = $1',
                 [registration_code.toUpperCase()]
             );
             if (groupResult.rows.length > 0) {
-                groupId = groupResult.rows[0].id;
+                group = groupResult.rows[0];
+                groupId = group.id;
                 console.log('✅ Group found by registration_code:', groupId);
+                console.log('📝 Group details:', group);
             } else {
                 console.log('❌ No group found with registration_code:', registration_code);
             }
         }
         
-        // ✅ If not found by registration_code, try using the user ID from token
+        // ✅ If not found by registration_code, try using group_id from body
+        if (!groupId && group_id) {
+            const groupResult = await pool.query(
+                'SELECT id, registration_code, team_name FROM groups WHERE id = $1',
+                [group_id]
+            );
+            if (groupResult.rows.length > 0) {
+                group = groupResult.rows[0];
+                groupId = group.id;
+                console.log('✅ Group found by group_id:', groupId);
+            }
+        }
+        
+        // ✅ If still not found, try using the user ID from token
         if (!groupId && req.user && req.user.id) {
             const groupResult = await pool.query(
-                'SELECT id FROM groups WHERE id = $1',
+                'SELECT id, registration_code, team_name FROM groups WHERE id = $1',
                 [req.user.id]
             );
             if (groupResult.rows.length > 0) {
-                groupId = groupResult.rows[0].id;
+                group = groupResult.rows[0];
+                groupId = group.id;
                 console.log('✅ Group found by user ID:', groupId);
             }
         }
 
         if (!groupId) {
             console.log('❌ No group found. Registration code:', registration_code);
+            console.log('❌ Group ID:', group_id);
             console.log('❌ User from token:', req.user);
             return res.status(404).json({
                 success: false,
-                message: 'Group not found for this registration code. Please ensure you are logged in correctly.'
+                message: 'Group not found. Please ensure you are logged in correctly.'
             });
         }
+
+        console.log('✅ Final group ID:', groupId);
 
         // Check if project already exists
         const existing = await pool.query(
