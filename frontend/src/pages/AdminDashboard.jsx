@@ -36,6 +36,38 @@ const AdminDashboard = () => {
     const fetchAllData = async () => {
         try {
             const token = localStorage.getItem('token');
+            console.log('🔍 Fetching admin data with token:', token);
+            console.log('🔍 API URL:', API_URL);
+
+            const [projectsRes, teachersRes] = await Promise.all([
+                axios.get(`${API_URL}/api/admin/all-projects`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                axios.get(`${API_URL}/api/admin/teachers`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+            ]);
+
+            console.log('📥 Projects Response:', projectsRes.data);
+            console.log('📥 Teachers Response:', teachersRes.data);
+
+            if (projectsRes.data.success) {
+                setProjects(projectsRes.data.data);
+                setFilteredProjects(projectsRes.data.data);
+            }
+            if (teachersRes.data.success) setTeachers(teachersRes.data.data);
+        } catch (error) {
+            console.error('Fetch Error:', error);
+            console.error('Error Response:', error.response?.data);
+            toast.error('Failed to fetch data: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchAllData = async () => {
+        try {
+            const token = localStorage.getItem('token');
             const [projectsRes, teachersRes] = await Promise.all([
                 axios.get(`${API_URL}/api/admin/all-projects`, {
                     headers: { 'Authorization': `Bearer ${token}` }
