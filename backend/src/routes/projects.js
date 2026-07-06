@@ -4,7 +4,93 @@ const { pool } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { upload } = require('../config/cloudinary');
 
-// Submit Project with Image Upload
+// ✅ GET: Public Project View - THIS IS THE MISSING ROUTE
+router.get('/public/:code', async (req, res) => {
+    try {
+        const { code } = req.params;
+        console.log('📥 GET public project request for code:', code);
+
+        const result = await pool.query(
+            `SELECT 
+                g.id, g.registration_code, g.grade, g.division, 
+                g.teacher_guide, g.team_name, g.project_title, g.abstract,
+                g.students_data, g.project_submitted, g.created_at,
+                pd.aim, pd.materials, pd.procedure, pd.conclusion,
+                pd.abstract as project_abstract, pd.video_link, pd.images,
+                (SELECT AVG(stars) FROM parent_ratings WHERE group_id = g.id) as average_rating,
+                (SELECT COUNT(*) FROM parent_ratings WHERE group_id = g.id) as total_ratings,
+                (SELECT json_agg(json_build_object('judge_name', judge_name, 'score', score)) 
+                 FROM judge_scores WHERE group_id = g.id) as judge_scores
+            FROM groups g
+            LEFT JOIN project_details pd ON g.id = pd.group_id
+            WHERE g.registration_code = $1`,
+            [code.toUpperCase()]
+        );
+
+        console.log('🔍 Found rows:', result.rows.length);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
+
+        // Remove password from response
+        delete result.rows[0].password;
+
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Get Public Project Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch project: ' + error.message
+        });
+    }
+});
+
+// ✅ GET: Project by code (for dashboard views)
+router.get('/:code', async (req, res) => {
+    try {
+        const { code } = req.params;
+        console.log('📥 GET project request for code:', code);
+
+        const result = await pool.query(
+            `SELECT g.*, pd.* 
+            FROM groups g
+            LEFT JOIN project_details pd ON g.id = pd.group_id
+            WHERE g.registration_code = $1`,
+            [code.toUpperCase()]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
+
+        delete result.rows[0].password;
+
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Get Project Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch project'
+        });
+    }
+});
+
+// ✅ POST: Submit Project with Image Upload
 router.post('/submit', authenticate, upload.array('images', 5), async (req, res) => {
     try {
         console.log('📥 Project submission received');
@@ -93,87 +179,6 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
         res.status(500).json({
             success: false,
             message: 'Failed to submit project: ' + error.message
-        });
-    }
-});
-
-// Get Project Details (for judges/parents)
-router.get('/:code', async (req, res) => {
-    try {
-        const { code } = req.params;
-        console.log('📥 GET project request for code:', code);
-
-        const result = await pool.query(
-            `SELECT g.*, pd.* 
-            FROM groups g
-            LEFT JOIN project_details pd ON g.id = pd.group_id
-            WHERE g.registration_code = $1`,
-            [code.toUpperCase()]
-        );
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Project not found'
-            });
-        }
-
-        delete result.rows[0].password;
-
-        res.json({
-            success: true,
-            data: result.rows[0]
-        });
-
-    } catch (error) {
-        console.error('Get Project Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch project'
-        });
-    }
-});
-
-// Get Public Project View (with all details)
-router.get('/public/:code', async (req, res) => {
-    try {
-        const { code } = req.params;
-        console.log('📥 GET public project request for code:', code);
-
-        const result = await pool.query(
-            `SELECT 
-                g.*,
-                pd.aim, pd.materials, pd.procedure, pd.conclusion,
-                pd.abstract as project_abstract, pd.video_link, pd.images,
-                (SELECT AVG(stars) FROM parent_ratings WHERE group_id = g.id) as average_rating,
-                (SELECT COUNT(*) FROM parent_ratings WHERE group_id = g.id) as total_ratings,
-                (SELECT json_agg(json_build_object('judge_name', judge_name, 'score', score)) 
-                 FROM judge_scores WHERE group_id = g.id) as judge_scores
-            FROM groups g
-            LEFT JOIN project_details pd ON g.id = pd.group_id
-            WHERE g.registration_code = $1`,
-            [code.toUpperCase()]
-        );
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Project not found'
-            });
-        }
-
-        delete result.rows[0].password;
-
-        res.json({
-            success: true,
-            data: result.rows[0]
-        });
-
-    } catch (error) {
-        console.error('Get Public Project Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch project'
         });
     }
 });
