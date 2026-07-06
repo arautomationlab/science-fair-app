@@ -1,50 +1,151 @@
-require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
+const router = express.Router();
+const { pool } = require('../config/database');
+const { authenticate } = require('../middleware/auth');
 
-const app = express();
+// ✅ GET project by registration code
+router.get('/:code', async (req, res) => {
+    try {
+        const { code } = req.params;
+        console.log('📥 GET project request for code:', code);
 
-// CORS
-app.use(cors({
-    origin: '*',
-    credentials: true
-}));
+        const result = await pool.query(
+            `SELECT g.*, pd.* 
+            FROM groups g
+            LEFT JOIN project_details pd ON g.id = pd.group_id
+            WHERE g.registration_code = $1`,
+            [code.toUpperCase()]
+        );
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+        console.log('🔍 Found rows:', result.rows.length);
 
-// ✅ IMPORT ALL ROUTES
-const authRoutes = require('./src/routes/auth');
-const projectRoutes = require('./src/routes/projects');
-const judgeRoutes = require('./src/routes/judge');
-const ratingRoutes = require('./src/routes/ratings');
-const adminRoutes = require('./src/routes/admin');
-const teacherRoutes = require('./src/routes/teacher');
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
 
-// ✅ USE ALL ROUTES
-app.use('/api/auth', authRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/judge', judgeRoutes);
-app.use('/api/ratings', ratingRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/teacher', teacherRoutes);
+        delete result.rows[0].password;
 
-// Health Check
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'OK', message: 'Science Fair API is running!' });
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Get Project Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch project'
+        });
+    }
 });
 
-// Error Handling
-app.use((err, req, res, next) => {
-    console.error('❌ Global Error:', err);
-    res.status(err.status || 500).json({
-        success: false,
-        message: err.message || 'Internal Server Error'
-    });
+// ✅ POST submit project
+router.post('/submit', authenticate, async (req, res) => {
+    try {
+        console.log('📥 Project submission received');
+        console.log('📦 Body:', JSON.stringify(req.body, null, 2));
+        console.log('👤 User from token:', JSON.stringify(req.user, null, 2));
+
+        const { 
+            registration_code, aim, materials, procedure, conclusion, 
+            abstract, video_link, images 
+        } = req.body;
+
+        let groupId = null;
+
+        // ✅ Method 1: Try to find group by registration_code from body
+        if (registration_code) {
+            console.log('🔍 Looking for group with registration_code:', registration_code);
+            const groupResult = await pool.query(
+                'SELECT id, registration_code, team_name FROM groups WHERE registration_code = $1',
+                [registration_code.toUpperCase()]
+            );
+            if (groupResult.rows.length > 0) {
+                groupId = groupResult.rows[0].id;
+                console.log('✅ Group found by registration_code:', groupId);
+                console.log('📝 Group details:', groupResult.rows[0]);
+            } else {
+                console.log('❌ No group found with registration_code:', registration_code);
+                // ✅ Debug: Check what's in the database
+                const allGroups = await pool.query('SELECT id, registration_code FROM groups');
+                console.log('📋 All groups in database:', allGroups.rows);
+            }
+        }
+
+        // ✅ Method 2: Try using the user ID from token
+        if (!groupId && req.user && req.user.id) {
+            console.log('🔍 Looking for group with user ID:', req.user.id);
+            const groupResult = await pool.query(
+                'SELECT id, registration_code, team_name FROM groups WHERE id = $1',
+                [req.user.id]
+            );
+            if (groupResult.rows.length > 0) {
+                groupId = groupResult.rows[0].id;
+                console.log('✅ Group found by user ID:', groupId);
+            } else {
+                console.log('❌ No group found with user ID:', req.user.id);
+            }
+        }
+
+        if (!groupId) {
+            console.log('❌ No group found. Registration code:', registration_code);
+            console.log('❌ User from token:', req.user);
+            return res.status(404).json({
+                success: false,
+                message: 'Group not found. Please ensure you are logged in correctly.'
+            });
+        }
+
+        // Check if project already exists
+        const existing = await pool.query(
+            'SELECT * FROM project_details WHERE group_id = $1',
+            [groupId]
+        );
+
+        let result;
+        if (existing.rows.length > 0) {
+            result = await pool.query(
+                `UPDATE project_details 
+                SET aim = $1, materials = $2, procedure = $3, conclusion = $4,
+                    abstract = $5, video_link = $6, images = $7, updated_at = NOW()
+                WHERE group_id = $8
+                RETURNING *`,
+                [aim, materials, procedure, conclusion, abstract || '', video_link || '', images || '[]', groupId]
+            );
+            console.log('✅ Project updated for group:', groupId);
+        } else {
+            result = await pool.query(
+                `INSERT INTO project_details 
+                (group_id, aim, materials, procedure, conclusion, abstract, video_link, images)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING *`,
+                [groupId, aim, materials, procedure, conclusion, abstract || '', video_link || '', images || '[]']
+            );
+            console.log('✅ New project created for group:', groupId);
+        }
+
+        // Update group submission status
+        await pool.query(
+            'UPDATE groups SET project_submitted = TRUE, submitted_at = NOW() WHERE id = $1',
+            [groupId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Project submitted successfully!',
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Project Submission Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to submit project: ' + error.message
+        });
+    }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📊 Health check: /api/health`);
-});
+module.exports = router;

@@ -74,13 +74,9 @@ const ProjectSubmit = () => {
                 return;
             }
 
-            // ✅ Get group ID from the user data or group data
-            const groupId = userData.id || groupData.id;
-            
-            // ✅ Prepare payload with both registration_code and group_id
+            // ✅ Prepare payload - ONLY send registration_code (not group_id)
             const payload = {
                 registration_code: registrationCode,
-                group_id: groupId,
                 aim: formData.aim,
                 materials: formData.materials,
                 procedure: formData.procedure,
@@ -90,7 +86,7 @@ const ProjectSubmit = () => {
                 images: images.map(img => img.name)
             };
 
-            console.log('📤 Submitting payload:', payload);
+            console.log('📤 Submitting payload:', JSON.stringify(payload, null, 2));
 
             const response = await axios.post(
                 `${API_URL}/api/projects/submit`,
