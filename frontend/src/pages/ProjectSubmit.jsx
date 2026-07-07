@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
@@ -106,7 +106,7 @@ const ProjectSubmit = () => {
                 return;
             }
 
-            // ✅ Create FormData for file upload
+            // Create FormData for file upload
             const formDataToSend = new FormData();
             formDataToSend.append('registration_code', registrationCode);
             formDataToSend.append('aim', formData.aim);
@@ -116,7 +116,7 @@ const ProjectSubmit = () => {
             formDataToSend.append('abstract', formData.abstract || '');
             formDataToSend.append('video_link', formData.video_link || '');
 
-            // ✅ Append images
+            // Append images
             images.forEach(image => {
                 formDataToSend.append('images', image);
             });
@@ -206,7 +206,7 @@ const ProjectSubmit = () => {
                 {/* Conclusion */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">✅ Conclusion / Results *</label>
-                    <textarea>
+                    <textarea
                         name="conclusion"
                         rows="4"
                         value={formData.conclusion}
