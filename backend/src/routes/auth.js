@@ -10,7 +10,7 @@ const QRCode = require('qrcode');
 function generateCode(grade) {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `SCI-${grade}-${timestamp}-${random}`;
+    return `SPARK4.0-${grade}-${timestamp}-${random}`;
 }
 
 // ==================== STUDENT REGISTRATION ====================
@@ -65,11 +65,13 @@ router.post('/register', [
 
         const groupId = result.rows[0].id;
 
-        // Generate QR Code
-        const qrCodeDataUrl = await QRCode.toDataURL(registrationCode);
+        // ✅ Generate QR Code with FULL URL
+        const frontendUrl = process.env.APP_URL || 'https://science-fair-app.vercel.app';
+        const qrData = `${frontendUrl}/project/${registrationCode}`;
+        const qrCodeDataUrl = await QRCode.toDataURL(qrData);
 
         console.log(`✅ Registration successful! Code: ${registrationCode}`);
-        console.log(`👨‍🏫 Teacher Guide: ${teacher_guide}`);
+        console.log(`📱 QR Code URL: ${qrData}`);
 
         res.json({
             success: true,
