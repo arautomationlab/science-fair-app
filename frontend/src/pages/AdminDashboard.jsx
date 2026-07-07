@@ -105,10 +105,8 @@ const AdminDashboard = () => {
         navigate(`/admin/winners/${grade}`);
     };
 
-    // ✅ Fixed exportToExcel with safe students_data parsing
     const exportToExcel = () => {
         const exportData = filteredProjects.map(p => {
-            // ✅ Safe parsing of students_data
             let students = [];
             try {
                 if (typeof p.students_data === 'string') {
@@ -164,13 +162,51 @@ const AdminDashboard = () => {
         window.print();
         setShowExportModal(false);
     };
+    // Add this function inside your AdminDashboard component
+const deleteProject = async (projectId, projectName) => {
+    // Show confirmation dialog
+    if (!window.confirm(`⚠️ Are you sure you want to delete the project "${projectName}"?\n\nThis will permanently delete:\n• All project details\n• All judge scores\n• All parent ratings\n• The group itself\n\nThis action CANNOT be undone!`)) {
+        return;
+    }
 
-    // Stats calculations
+    // Second confirmation for safety
+    if (!window.confirm(`🔴 FINAL WARNING: Are you absolutely sure? This action is permanent!`)) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('token');
+        const response = await axios.delete(
+            `${API_URL}/api/admin/project/${projectId}`,
+            {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }
+        );
+
+        if (response.data.success) {
+            toast.success(response.data.message);
+            // Refresh the data
+            fetchAllData();
+        } else {
+            toast.error(response.data.message || 'Failed to delete project');
+        }
+    } catch (error) {
+        console.error('Delete Error:', error);
+        toast.error(error.response?.data?.message || 'Failed to delete project');
+    }
+};
+    // ✅ FIXED: Proper stats calculations
     const totalProjects = projects.length;
     const submittedProjects = projects.filter(p => p.project_submitted).length;
-    const fullyJudged = projects.filter(p => p.judge_count >= 2).length;
-    const totalRatings = projects.reduce((sum, p) => sum + (p.rating_count || 0), 0);
+    const fullyJudged = projects.filter(p => (p.judge_count || 0) >= 2).length;
     
+    // ✅ FIXED: Properly sum parent ratings
+    const totalRatings = projects.reduce((sum, p) => {
+        const count = parseInt(p.rating_count) || 0;
+        return sum + count;
+    }, 0);
+    
+    // ✅ FIXED: Calculate total students
     const totalStudents = projects.reduce((sum, p) => {
         let students = [];
         try {
@@ -194,7 +230,7 @@ const AdminDashboard = () => {
     const getGradeStats = (grade) => {
         const gradeProjects = projects.filter(p => p.grade === parseInt(grade));
         const submitted = gradeProjects.filter(p => p.project_submitted).length;
-        const judged = gradeProjects.filter(p => p.judge_count >= 2).length;
+        const judged = gradeProjects.filter(p => (p.judge_count || 0) >= 2).length;
         return { total: gradeProjects.length, submitted, judged };
     };
 
@@ -375,7 +411,6 @@ const AdminDashboard = () => {
                                 </tr>
                             ) : (
                                 filteredProjects.map((project, index) => {
-                                    // ✅ Safe parsing of students_data
                                     let students = [];
                                     try {
                                         if (typeof project.students_data === 'string') {
@@ -424,14 +459,7 @@ const AdminDashboard = () => {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <button
-                                                    onClick={() => {
-                                                        const code = project.registration_code;
-                                                        if (code) {
-                                                            window.open(`/project/${code}`, '_blank');
-                                                        } else {
-                                                            toast.error('Registration code not found');
-                                                        }
-                                                    }}
+                                                    onClick={() => navigate(`/project/${project.registration_code}`)}
                                                     className="text-blue-600 hover:text-blue-900 text-sm mr-2"
                                                 >
                                                     View
@@ -444,6 +472,29 @@ const AdminDashboard = () => {
                                                     className="text-gray-600 hover:text-gray-900 text-sm"
                                                 >
                                                     Copy
+                                                </button>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <button
+                                                    onClick={() => navigate(`/project/${project.registration_code}`)}
+                                                    className="text-blue-600 hover:text-blue-900 text-sm mr-2"
+                                                >
+                                                    View
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(project.registration_code || '');
+                                                        toast.success('Code copied!');
+                                                    }}
+                                                    className="text-gray-600 hover:text-gray-900 text-sm mr-2"
+                                                >
+                                                    Copy
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteProject(project.id, project.team_name)}
+                                                    className="text-red-600 hover:text-red-900 text-sm"
+                                                >
+                                                    🗑️ Delete
                                                 </button>
                                             </td>
                                         </tr>

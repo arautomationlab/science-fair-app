@@ -100,4 +100,69 @@ router.get('/winners/:grade', authenticateAdmin, async (req, res) => {
     }
 });
 
+// ✅ DELETE: Delete Project (Admin only)
+router.delete('/project/:id', authenticateAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log('🗑️ Admin deleting project with ID:', id);
+
+        // Start a transaction to delete all related data
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+
+            // 1. Delete parent ratings
+            await client.query('DELETE FROM parent_ratings WHERE group_id = $1', [id]);
+            console.log('✅ Deleted parent ratings');
+
+            // 2. Delete judge scores
+            await client.query('DELETE FROM judge_scores WHERE group_id = $1', [id]);
+            console.log('✅ Deleted judge scores');
+
+            // 3. Delete project details
+            await client.query('DELETE FROM project_details WHERE group_id = $1', [id]);
+            console.log('✅ Deleted project details');
+
+            // 4. Delete the group
+            const result = await client.query(
+                'DELETE FROM groups WHERE id = $1 RETURNING registration_code, team_name, grade, division',
+                [id]
+            );
+
+            if (result.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({
+                    success: false,
+                    message: 'Project not found'
+                });
+            }
+
+            await client.query('COMMIT');
+
+            const deletedProject = result.rows[0];
+            console.log('✅ Project deleted:', deletedProject.registration_code);
+
+            res.json({
+                success: true,
+                message: `Project "${deletedProject.team_name}" (Grade ${deletedProject.grade}-${deletedProject.division}) deleted successfully!`,
+                data: deletedProject
+            });
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+
+    } catch (error) {
+        console.error('Delete Project Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete project: ' + error.message
+        });
+    }
+});
+
 module.exports = router;
