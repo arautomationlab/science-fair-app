@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
-const { upload } = require('../config/cloudinary');
+//const { upload } = require('../config/cloudinary');
 
 // ✅ PUBLIC PROJECT VIEW - THIS MUST EXIST
 router.get('/public/:code', async (req, res) => {
@@ -88,7 +88,8 @@ router.get('/:code', async (req, res) => {
 });
 
 // ✅ Submit Project
-router.post('/submit', authenticate, upload.array('images', 5), async (req, res) => {
+///router.post('/submit', authenticate, upload.array('images', 1), async (req, res) => {
+    router.post('/submit', authenticate, async (req, res) => {
     try {
         console.log('📥 Project submission received');
         console.log('📦 Body:', req.body);
