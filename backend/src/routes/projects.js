@@ -4,11 +4,11 @@ const { pool } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { upload } = require('../config/cloudinary');
 
-// ✅ GET: Public Project View - THIS IS THE MISSING ROUTE
+// ✅ PUBLIC PROJECT VIEW - THIS MUST EXIST
 router.get('/public/:code', async (req, res) => {
     try {
         const { code } = req.params;
-        console.log('📥 GET public project request for code:', code);
+        console.log('📥 Public project request for code:', code);
 
         const result = await pool.query(
             `SELECT 
@@ -36,7 +36,6 @@ router.get('/public/:code', async (req, res) => {
             });
         }
 
-        // Remove password from response
         delete result.rows[0].password;
 
         res.json({
@@ -45,7 +44,7 @@ router.get('/public/:code', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Get Public Project Error:', error);
+        console.error('Public Project Error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch project: ' + error.message
@@ -53,12 +52,10 @@ router.get('/public/:code', async (req, res) => {
     }
 });
 
-// ✅ GET: Project by code (for dashboard views)
+// ✅ GET Project by Code
 router.get('/:code', async (req, res) => {
     try {
         const { code } = req.params;
-        console.log('📥 GET project request for code:', code);
-
         const result = await pool.query(
             `SELECT g.*, pd.* 
             FROM groups g
@@ -90,7 +87,7 @@ router.get('/:code', async (req, res) => {
     }
 });
 
-// ✅ POST: Submit Project with Image Upload
+// ✅ Submit Project
 router.post('/submit', authenticate, upload.array('images', 5), async (req, res) => {
     try {
         console.log('📥 Project submission received');
@@ -102,15 +99,11 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
             abstract, video_link 
         } = req.body;
 
-        // Get image URLs from Cloudinary
         let imageUrls = [];
         if (req.files && req.files.length > 0) {
             imageUrls = req.files.map(file => file.path);
         }
 
-        console.log('🖼️ Image URLs:', imageUrls);
-
-        // Find group
         let groupId = null;
         if (registration_code) {
             const groupResult = await pool.query(
@@ -119,19 +112,16 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
             );
             if (groupResult.rows.length > 0) {
                 groupId = groupResult.rows[0].id;
-                console.log('✅ Group found by registration_code:', groupId);
             }
         }
 
         if (!groupId) {
-            console.log('❌ No group found');
             return res.status(404).json({
                 success: false,
                 message: 'Group not found'
             });
         }
 
-        // Check if project already exists
         const existing = await pool.query(
             'SELECT * FROM project_details WHERE group_id = $1',
             [groupId]
@@ -139,7 +129,6 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
 
         let result;
         if (existing.rows.length > 0) {
-            // Update existing
             result = await pool.query(
                 `UPDATE project_details 
                 SET aim = $1, materials = $2, procedure = $3, conclusion = $4,
@@ -148,9 +137,7 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
                 RETURNING *`,
                 [aim, materials, procedure, conclusion, abstract || '', video_link || '', JSON.stringify(imageUrls), groupId]
             );
-            console.log('✅ Project updated for group:', groupId);
         } else {
-            // Insert new
             result = await pool.query(
                 `INSERT INTO project_details 
                 (group_id, aim, materials, procedure, conclusion, abstract, video_link, images)
@@ -158,10 +145,8 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
                 RETURNING *`,
                 [groupId, aim, materials, procedure, conclusion, abstract || '', video_link || '', JSON.stringify(imageUrls)]
             );
-            console.log('✅ New project created for group:', groupId);
         }
 
-        // Update group submission status
         await pool.query(
             'UPDATE groups SET project_submitted = TRUE, submitted_at = NOW() WHERE id = $1',
             [groupId]
