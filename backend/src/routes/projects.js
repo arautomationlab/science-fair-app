@@ -19,6 +19,7 @@ router.get('/public/:code', async (req, res) => {
                 pd.abstract as project_abstract, pd.video_link, pd.images,
                 (SELECT AVG(stars) FROM parent_ratings WHERE group_id = g.id) as average_rating,
                 (SELECT COUNT(*) FROM parent_ratings WHERE group_id = g.id) as total_ratings,
+                (SELECT ROUND(AVG(stars)::numeric, 1) FROM parent_ratings WHERE group_id = g.id) as average_rating,
                 (SELECT json_agg(json_build_object('judge_name', judge_name, 'score', score)) 
                  FROM judge_scores WHERE group_id = g.id) as judge_scores
             FROM groups g

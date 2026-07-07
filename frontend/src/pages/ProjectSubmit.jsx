@@ -19,6 +19,50 @@ const ProjectSubmit = () => {
     const [images, setImages] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
 
+    useEffect(() => {
+        // Load existing project data if available
+        const loadProjectData = async () => {
+            try {
+                const userData = JSON.parse(localStorage.getItem('user') || '{}');
+                const registrationCode = userData.registration_code || userData.registrationCode;
+                
+                if (registrationCode) {
+                    const token = localStorage.getItem('token');
+                    const response = await axios.get(`${API_URL}/api/projects/${registrationCode}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (response.data.success && response.data.data) {
+                        const project = response.data.data;
+                        setFormData({
+                            aim: project.aim || '',
+                            materials: project.materials || '',
+                            procedure: project.procedure || '',
+                            conclusion: project.conclusion || '',
+                            abstract: project.abstract || '',
+                            video_link: project.video_link || ''
+                        });
+                        // Load images if any
+                        if (project.images) {
+                            try {
+                                const imageUrls = typeof project.images === 'string' 
+                                    ? JSON.parse(project.images) 
+                                    : project.images;
+                                setImagePreviews(imageUrls.map(url => url));
+                            } catch (e) {
+                                console.error('Error parsing images:', e);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('No existing project data to load');
+            }
+        };
+        
+        loadProjectData();
+    }, []);
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -28,7 +72,7 @@ const ProjectSubmit = () => {
         setImages(files);
         
         const previews = files.map(file => URL.createObjectURL(file));
-        setImagePreviews(previews);
+        setImagePreviews([...imagePreviews, ...previews]);
     };
 
     const removeImage = (index) => {
@@ -162,7 +206,7 @@ const ProjectSubmit = () => {
                 {/* Conclusion */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700">✅ Conclusion / Results *</label>
-                    <textarea
+                    <textarea>
                         name="conclusion"
                         rows="4"
                         value={formData.conclusion}

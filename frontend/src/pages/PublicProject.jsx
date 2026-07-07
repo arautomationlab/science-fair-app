@@ -230,7 +230,7 @@ const PublicProject = () => {
                         </div>
                     </div>
                     <div className="bg-white/20 px-4 py-2 rounded-lg text-center">
-                        <p className="text-2xl font-bold">{project.average_rating || 0} ⭐</p>
+                        <p className="text-2xl font-bold">{Number(project.average_rating || 0).toFixed(1)} ⭐</p>
                         <p className="text-sm text-blue-200">{project.total_ratings || 0} ratings</p>
                     </div>
                 </div>
