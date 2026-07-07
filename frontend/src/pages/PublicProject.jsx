@@ -9,6 +9,7 @@ const PublicProject = () => {
     const { code } = useParams();
     const [project, setProject] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [rating, setRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const [comment, setComment] = useState('');
@@ -23,14 +24,10 @@ const PublicProject = () => {
     const [submittingJudge, setSubmittingJudge] = useState(false);
 
     useEffect(() => {
-        console.log('🔍 PublicProject component mounted');
-        console.log('🔍 Code from URL params:', code);
-        
         if (code) {
             fetchProject();
         } else {
-            console.error('❌ No code provided in URL');
-            toast.error('Invalid project code');
+            setError('No project code provided');
             setLoading(false);
         }
     }, [code]);
@@ -38,30 +35,22 @@ const PublicProject = () => {
     const fetchProject = async () => {
         try {
             console.log('📤 Fetching project with code:', code);
-            console.log('📤 API URL:', API_URL);
-            
             const response = await axios.get(`${API_URL}/api/projects/public/${code}`);
-            console.log('📥 Response status:', response.status);
-            console.log('📥 Response data:', response.data);
+            console.log('📥 Response:', response.data);
             
-            if (response.data.success) {
+            if (response.data.success && response.data.data) {
                 setProject(response.data.data);
-                console.log('✅ Project loaded successfully');
             } else {
-                console.error('❌ API returned success: false');
-                toast.error('Project not found');
+                setError('Project not found');
             }
-        } catch (error) {
-            console.error('❌ Fetch Project Error:', error);
-            console.error('❌ Error Response:', error.response?.data);
-            console.error('❌ Error Status:', error.response?.status);
-            toast.error(error.response?.data?.message || 'Failed to load project');
+        } catch (err) {
+            console.error('❌ Fetch Error:', err);
+            setError(err.response?.data?.message || 'Failed to load project');
         } finally {
             setLoading(false);
         }
     };
 
-    // Get YouTube thumbnail
     const getYouTubeThumbnail = (url) => {
         if (!url) return null;
         const patterns = [
@@ -147,29 +136,64 @@ const PublicProject = () => {
         }
     };
 
+    // ✅ Safe data extraction with fallbacks
+    const getSafeData = (field, defaultValue = 'N/A') => {
+        if (!project) return defaultValue;
+        return project[field] || defaultValue;
+    };
+
+    const getSafeStudents = () => {
+        if (!project) return [];
+        try {
+            if (typeof project.students_data === 'string') {
+                return JSON.parse(project.students_data || '[]');
+            }
+            if (Array.isArray(project.students_data)) {
+                return project.students_data;
+            }
+            if (project.students_data && typeof project.students_data === 'object') {
+                return Object.values(project.students_data);
+            }
+            return [];
+        } catch (e) {
+            console.error('Error parsing students_data:', e);
+            return [];
+        }
+    };
+
+    const getSafeImages = () => {
+        if (!project) return [];
+        try {
+            if (typeof project.images === 'string') {
+                return JSON.parse(project.images || '[]');
+            }
+            if (Array.isArray(project.images)) {
+                return project.images;
+            }
+            return [];
+        } catch (e) {
+            console.error('Error parsing images:', e);
+            return [];
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-4 text-gray-600">Loading project...</p>
-                    <p className="text-xs text-gray-400 mt-2">Code: {code}</p>
                 </div>
             </div>
         );
     }
 
-    if (!project) {
+    if (error || !project) {
         return (
             <div className="max-w-4xl mx-auto p-6 text-center">
                 <h2 className="text-2xl font-bold text-red-600">Project Not Found</h2>
-                <p className="text-gray-600 mt-2">The project you're looking for doesn't exist.</p>
+                <p className="text-gray-600 mt-2">{error || 'The project you\'re looking for doesn\'t exist.'}</p>
                 <p className="text-sm text-gray-400 mt-4">Code: {code}</p>
-                <div className="mt-4 p-4 bg-gray-100 rounded-lg text-left">
-                    <p className="text-sm font-semibold">Debug Info:</p>
-                    <p className="text-xs text-gray-600">API URL: {API_URL}</p>
-                    <p className="text-xs text-gray-600">Code: {code}</p>
-                </div>
                 <button
                     onClick={() => window.history.back()}
                     className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
@@ -180,8 +204,8 @@ const PublicProject = () => {
         );
     }
 
-    const students = JSON.parse(project.students_data || '[]');
-    const images = project.images || [];
+    const students = getSafeStudents();
+    const images = getSafeImages();
     const youtubeThumbnail = getYouTubeThumbnail(project.video_link);
     const hasProjectDetails = project.aim || project.materials || project.procedure || project.conclusion;
 
@@ -191,17 +215,17 @@ const PublicProject = () => {
             <div className="bg-gradient-to-r from-blue-900 to-blue-700 text-white p-6 rounded-t-lg">
                 <div className="flex justify-between items-start flex-wrap gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold">{project.team_name}</h1>
-                        <p className="text-xl text-blue-200 mt-1">{project.project_title}</p>
+                        <h1 className="text-3xl font-bold">{getSafeData('team_name')}</h1>
+                        <p className="text-xl text-blue-200 mt-1">{getSafeData('project_title')}</p>
                         <div className="flex flex-wrap gap-3 mt-3">
                             <span className="bg-blue-600 px-3 py-1 rounded-full text-sm">
-                                Grade {project.grade} - {project.division}
+                                Grade {getSafeData('grade')} - {getSafeData('division')}
                             </span>
                             <span className="bg-yellow-500 text-blue-900 px-3 py-1 rounded-full text-sm font-bold">
                                 ⚡ Spark 4.0
                             </span>
                             <span className="bg-green-500 px-3 py-1 rounded-full text-sm">
-                                👨‍🏫 {project.teacher_guide || 'No Guide Assigned'}
+                                👨‍🏫 {getSafeData('teacher_guide', 'No Guide Assigned')}
                             </span>
                         </div>
                     </div>
@@ -219,55 +243,38 @@ const PublicProject = () => {
                         <span className="text-6xl">📝</span>
                         <h3 className="text-xl font-bold text-gray-700 mt-4">Project Details Not Submitted Yet</h3>
                         <p className="text-gray-500 mt-2">The student has registered but hasn't submitted the project details yet.</p>
-                        <p className="text-sm text-gray-400 mt-1">Team Name: {project.team_name}</p>
-                        <p className="text-sm text-gray-400">Grade: {project.grade} - {project.division}</p>
+                        <p className="text-sm text-gray-400 mt-1">Team Name: {getSafeData('team_name')}</p>
+                        <p className="text-sm text-gray-400">Grade: {getSafeData('grade')} - {getSafeData('division')}</p>
                     </div>
                 ) : (
                     <div className="grid md:grid-cols-3 gap-8">
-                        {/* LEFT COLUMN - Project Details (2/3 width) */}
+                        {/* LEFT COLUMN */}
                         <div className="md:col-span-2 space-y-4">
-                            {/* Abstract */}
                             {project.abstract && (
                                 <div>
-                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
-                                        📄 Abstract
-                                    </h3>
+                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">📄 Abstract</h3>
                                     <p className="text-gray-600 mt-1">{project.abstract}</p>
                                 </div>
                             )}
-
-                            {/* Aim */}
                             {project.aim && (
                                 <div>
-                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
-                                        🎯 Aim / Objective
-                                    </h3>
+                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">🎯 Aim</h3>
                                     <p className="text-gray-600 mt-1">{project.aim}</p>
                                 </div>
                             )}
-
-                            {/* Materials */}
                             {project.materials && (
                                 <div>
-                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
-                                        🧪 Materials Required
-                                    </h3>
+                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">🧪 Materials</h3>
                                     <div className="mt-1 flex flex-wrap gap-2">
                                         {project.materials.split(',').map((item, idx) => (
-                                            <span key={idx} className="bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-700">
-                                                {item.trim()}
-                                            </span>
+                                            <span key={idx} className="bg-gray-100 px-3 py-1 rounded-full text-sm">{item.trim()}</span>
                                         ))}
                                     </div>
                                 </div>
                             )}
-
-                            {/* Procedure */}
                             {project.procedure && (
                                 <div>
-                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
-                                        📋 Procedure
-                                    </h3>
+                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">📋 Procedure</h3>
                                     <div className="mt-1 space-y-1">
                                         {project.procedure.split('\n').filter(step => step.trim()).map((step, idx) => (
                                             <div key={idx} className="flex gap-2 text-gray-600">
@@ -278,37 +285,26 @@ const PublicProject = () => {
                                     </div>
                                 </div>
                             )}
-
-                            {/* Conclusion */}
                             {project.conclusion && (
                                 <div>
-                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">
-                                        ✅ Conclusion / Results
-                                    </h3>
+                                    <h3 className="font-bold text-gray-700 text-lg flex items-center gap-2">✅ Conclusion</h3>
                                     <p className="text-gray-600 mt-1">{project.conclusion}</p>
                                 </div>
                             )}
                         </div>
 
-                        {/* RIGHT COLUMN - Images & Video (1/3 width) */}
+                        {/* RIGHT COLUMN */}
                         <div className="space-y-4">
-                            {/* Images */}
                             <div>
                                 <h3 className="font-bold text-gray-700 mb-2">🖼️ Images</h3>
                                 {images && images.length > 0 ? (
                                     <div className="space-y-2">
                                         {images.map((img, idx) => (
-                                            <a 
-                                                key={idx} 
-                                                href={img} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="block"
-                                            >
+                                            <a key={idx} href={img} target="_blank" rel="noopener noreferrer" className="block">
                                                 <img 
                                                     src={img} 
                                                     alt={`Project ${idx + 1}`} 
-                                                    className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition cursor-pointer"
+                                                    className="w-full h-32 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition"
                                                     onError={(e) => {
                                                         e.target.src = 'https://via.placeholder.com/400x300?text=Image+Not+Found';
                                                     }}
@@ -327,16 +323,10 @@ const PublicProject = () => {
                                 )}
                             </div>
 
-                            {/* Video */}
                             {project.video_link && youtubeThumbnail && (
                                 <div>
                                     <h3 className="font-bold text-gray-700 mb-2">🎥 Project Video</h3>
-                                    <a 
-                                        href={project.video_link} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="block relative group"
-                                    >
+                                    <a href={project.video_link} target="_blank" rel="noopener noreferrer" className="block relative group">
                                         <img 
                                             src={youtubeThumbnail} 
                                             alt="Video Thumbnail" 
@@ -355,23 +345,23 @@ const PublicProject = () => {
                     </div>
                 )}
 
-                {/* Team Members - Always Show */}
+                {/* Team Members */}
                 <div className={`${hasProjectDetails ? 'mt-6 border-t pt-4' : 'mt-4'}`}>
                     <h3 className="font-semibold text-gray-700 mb-2">👨‍👩‍👧‍👦 Team Members</h3>
                     <div className="space-y-1">
                         {students.map((student, idx) => (
                             <div key={idx} className="flex items-center gap-2">
                                 <span className="text-blue-600">👤</span>
-                                <span>{student.name}</span>
+                                <span>{student.name || 'Unknown'}</span>
                                 <span className="text-xs text-gray-500 ml-2">
-                                    Parent: {student.parent_name}
+                                    Parent: {student.parent_name || 'N/A'}
                                 </span>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* Judge Scores Display */}
+                {/* Judge Scores */}
                 {project.judge_scores && project.judge_scores.length > 0 && (
                     <div className="mt-6 border-t pt-4">
                         <h3 className="font-bold text-gray-700 mb-2">📊 Judge Scores</h3>
@@ -386,7 +376,7 @@ const PublicProject = () => {
                     </div>
                 )}
 
-                {/* Parent Rating Section */}
+                {/* Parent Rating */}
                 <div className="mt-6 border-t pt-6">
                     <h3 className="text-xl font-bold text-gray-700 mb-4">⭐ Rate This Project</h3>
                     <div className="flex flex-col md:flex-row gap-6 items-start">
@@ -435,7 +425,7 @@ const PublicProject = () => {
                     </div>
                 </div>
 
-                {/* Judge Panel Section */}
+                {/* Judge Panel */}
                 <div className="mt-6 border-t pt-6">
                     <h3 className="text-xl font-bold text-gray-700 mb-4">👨‍⚖️ Judge Panel</h3>
                     
