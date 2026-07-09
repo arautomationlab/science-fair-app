@@ -349,15 +349,31 @@ const PublicProject = () => {
                 <div className={`${hasProjectDetails ? 'mt-6 border-t pt-4' : 'mt-4'}`}>
                     <h3 className="font-semibold text-gray-700 mb-2">👨‍👩‍👧‍👦 Team Members</h3>
                     <div className="space-y-1">
-                        {students.map((student, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                                <span className="text-blue-600">👤</span>
-                                <span>{student.name || 'Unknown'}</span>
-                                <span className="text-xs text-gray-500 ml-2">
-                                    Parent: {student.parent_name || 'N/A'}
-                                </span>
-                            </div>
-                        ))}
+                        {students.length > 0 ? (
+                            students.map((student, idx) => {
+                                // ✅ Combine name fields
+                                const fullName = [
+                                    student.firstName || '',
+                                    student.middleName || '',
+                                    student.lastName || ''
+                                ].filter(Boolean).join(' ');
+                                
+                                // ✅ Fallback to old format if exists
+                                const displayName = fullName || student.name || 'Unknown';
+                                
+                                return (
+                                    <div key={idx} className="flex items-center gap-2">
+                                        <span className="text-blue-600">👤</span>
+                                        <span>{displayName}</span>
+                                        <span className="text-xs text-gray-500 ml-2">
+                                            Parent: {student.parent_name || 'N/A'}
+                                        </span>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <p className="text-sm text-gray-500">No team members listed</p>
+                        )}
                     </div>
                 </div>
 
