@@ -95,8 +95,12 @@ const Register = () => {
 
         for (let i = 0; i < formData.students.length; i++) {
             const student = formData.students[i];
-            if (!student.name) {
-                toast.error(`Please enter name for Student ${i + 1}`);
+            if (!student.firstName) {
+                toast.error(`Please enter first name for Student ${i + 1}`);
+                return false;
+            }
+            if (!student.lastName) {
+                toast.error(`Please enter last name for Student ${i + 1}`);
                 return false;
             }
             if (!student.parent_name) {
@@ -185,7 +189,7 @@ const Register = () => {
                         {registrationData.students.map((student, idx) => (
                             <div key={idx} className="bg-blue-50 p-2 rounded mt-1">
                                 <p className="text-sm">
-                                    <strong>{idx + 1}.</strong> {student.name} 
+                                    <strong>{idx + 1}.</strong> {student.firstName} {student.middleName || ''} {student.lastName}
                                     <span className="text-gray-500 ml-2">(Parent: {student.parent_name})</span>
                                 </p>
                             </div>
