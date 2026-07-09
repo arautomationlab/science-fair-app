@@ -198,7 +198,7 @@ const Register = () => {
                             <img 
                                 src={registrationData.qr_code} 
                                 alt="QR Code" 
-                                className="mx-auto w-32 h-32 border-2 border-gray-200 rounded-lg"
+                                className="mx-auto w-48 h-48 border-4 border-gray-300 rounded-lg shadow-lg" 
                             />
                             <button
                                 onClick={() => downloadQRCode(registrationData.qr_code, registrationData.registration_code)}
@@ -361,20 +361,45 @@ const Register = () => {
                     {formData.students.map((student, index) => (
                         <div key={index} className="bg-gray-50 p-4 rounded-lg mb-4 border border-gray-200">
                             <h4 className="font-semibold text-gray-700 mb-3">Student {index + 1}</h4>
-
+                            
                             <div className="grid grid-cols-1 gap-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Student Name *</label>
-                                    <input
-                                        type="text"
-                                        value={student.name}
-                                        onChange={(e) => handleStudentChange(index, 'name', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                        placeholder="Full name of student"
-                                        required
-                                    />
+                                {/* Name Fields - First, Middle, Last */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">First Name *</label>
+                                        <input
+                                            type="text"
+                                            value={student.firstName || ''}
+                                            onChange={(e) => handleStudentChange(index, 'firstName', e.target.value)}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                            placeholder="First name"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Middle Name</label>
+                                        <input
+                                            type="text"
+                                            value={student.middleName || ''}
+                                            onChange={(e) => handleStudentChange(index, 'middleName', e.target.value)}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                            placeholder="Middle name (optional)"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Last Name *</label>
+                                        <input
+                                            type="text"
+                                            value={student.lastName || ''}
+                                            onChange={(e) => handleStudentChange(index, 'lastName', e.target.value)}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                            placeholder="Last name"
+                                            required
+                                        />
+                                    </div>
                                 </div>
 
+                                {/* Parent Details */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Parent/Guardian Name *</label>
