@@ -59,7 +59,7 @@ const SchoolHeader = () => {
                 <div className="flex flex-wrap items-center justify-center md:justify-between gap-2 mt-3 pt-3 border-t border-blue-700/50 text-xs text-blue-300">
                     <div className="flex flex-wrap items-center gap-4">
                         <span className="flex items-center gap-1">
-                            📞 <a href="tel:+919876543210" className="hover:text-white transition">+91-98765-43210</a>
+                            📞 <a href="tel:+916366437866" className="hover:text-white transition">+91-63664-37866</a>
                         </span>
                         <span className="flex items-center gap-1">
                             📧 <a href="mailto:sciencefair@podar.edu" className="hover:text-white transition">sciencefair@podar.edu</a>

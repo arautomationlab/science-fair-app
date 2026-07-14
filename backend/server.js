@@ -21,6 +21,7 @@ const judgeRoutes = require('./src/routes/judge');
 const ratingRoutes = require('./src/routes/ratings');
 const adminRoutes = require('./src/routes/admin');
 const teacherRoutes = require('./src/routes/teacher');
+const otpRoutes = require('./src/routes/otp');
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -29,6 +30,7 @@ app.use('/api/judge', judgeRoutes);
 app.use('/api/ratings', ratingRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/teacher', teacherRoutes);
+app.use('/api/otp', otpRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {
