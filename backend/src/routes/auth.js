@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { pool } = require('../config/database');
 const QRCode = require('qrcode');
+const emailService = require('../services/emailService');
 
 // Generate Unique Code
 function generateCode(grade) {
@@ -94,6 +95,32 @@ router.post('/register', [
         });
     }
 });
+
+// Send email confirmation
+try {
+    const emailService = require('../services/emailService');
+    const student = students[0];
+    const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
+    
+    if (student.parent_email) {
+        await emailService.sendRegistrationEmail(
+            student.parent_email,
+            studentName,
+            student.parent_name,
+            registrationCode,
+            password,
+            team_name,
+            project_title,
+            grade,
+            division
+        );
+        console.log('✅ Email sent to:', student.parent_email);
+    }
+} catch (emailError) {
+    console.error('Email Error:', emailError);
+    // Don't fail registration if email fails
+}
+
 
 // ==================== STUDENT LOGIN ====================
 router.post('/login/student', [

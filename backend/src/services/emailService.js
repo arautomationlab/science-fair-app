@@ -1,15 +1,13 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // or 'yahoo', 'outlook', etc.
+    service: 'gmail',
     auth: {
-        user: process.env.EMAIL_USER, // Your email address
-        pass: process.env.EMAIL_PASS  // Your email password or app password
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
     }
 });
 
-// Send registration confirmation email
 async function sendRegistrationEmail(parentEmail, studentName, parentName, groupCode, password, teamName, projectTitle, grade, division) {
     try {
         const mailOptions = {
@@ -49,60 +47,14 @@ async function sendRegistrationEmail(parentEmail, studentName, parentName, group
             `
         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('✅ Email sent:', info.messageId);
-        return info;
+        await transporter.sendMail(mailOptions);
+        console.log('✅ Email sent:', mailOptions.to);
+        return { success: true };
 
     } catch (error) {
-        console.error('❌ Email Error:', error);
+        console.error('Email Error:', error);
         throw error;
     }
 }
 
-// Send bulk emails
-async function sendBulkRegistrationEmails(groupData) {
-    const { students, groupCode, password, teamName, projectTitle, grade, division } = groupData;
-    const results = [];
-
-    for (const student of students) {
-        if (student.parent_email) {
-            try {
-                const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
-                const result = await sendRegistrationEmail(
-                    student.parent_email,
-                    studentName,
-                    student.parent_name,
-                    groupCode,
-                    password,
-                    teamName,
-                    projectTitle,
-                    grade,
-                    division
-                );
-                results.push({ 
-                    student: studentName, 
-                    email: student.parent_email, 
-                    success: true 
-                });
-            } catch (error) {
-                results.push({ 
-                    student: student.firstName || 'Student', 
-                    email: student.parent_email, 
-                    success: false, 
-                    error: error.message 
-                });
-            }
-        } else {
-            results.push({ 
-                student: student.firstName || 'Student', 
-                email: 'No email provided', 
-                success: false, 
-                error: 'Email not provided' 
-            });
-        }
-    }
-
-    return results;
-}
-
-module.exports = { sendRegistrationEmail, sendBulkRegistrationEmails };
+module.exports = { sendRegistrationEmail };
