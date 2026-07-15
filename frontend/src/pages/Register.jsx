@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 
-// Teacher List
 const TEACHERS = [
     { id: 1, name: 'Chauhan Sushma' },
     { id: 2, name: 'Dharne Rekha' },
@@ -443,7 +442,7 @@ const Register = () => {
                                     </div>
                                 </div>
 
-                                {/* Parent Email - Optional */}
+                                {/* Parent Email */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Parent Email (Optional)</label>
                                     <input
@@ -453,7 +452,7 @@ const Register = () => {
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                         placeholder="parent@email.com"
                                     />
-                                    <p className="text-xs text-gray-500 mt-1">Confirmation will be sent to this email</p>
+                                    <p className="text-xs text-gray-500 mt-1">Confirmation sent to this email</p>
                                 </div>
                             </div>
                         </div>
