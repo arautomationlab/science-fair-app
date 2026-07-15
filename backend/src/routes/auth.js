@@ -65,7 +65,7 @@ router.post('/register', [
 
         const groupId = result.rows[0].id;
 
-        // Generate QR Code with FULL URL
+        // Generate QR Code
         const frontendUrl = process.env.APP_URL || 'https://science-fair-app.vercel.app';
         const qrData = `${frontendUrl}/project/${registrationCode}`;
         const qrCodeDataUrl = await QRCode.toDataURL(qrData);
@@ -73,37 +73,41 @@ router.post('/register', [
         console.log(`✅ Registration successful! Code: ${registrationCode}`);
         console.log(`📱 QR Code URL: ${qrData}`);
 
-        // ✅ Send email confirmation (MOVED INSIDE the try block)
-        try {
-            const emailService = require('../services/emailService');
-            const student = students[0];
-            const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
-            
-            if (student.parent_email) {
-                const emailResult = await emailService.sendRegistrationEmail(
-                    student.parent_email,
-                    studentName,
-                    student.parent_name,
-                    registrationCode,
-                    password,
-                    team_name,
-                    project_title,
-                    grade,
-                    division
-                );
-                if (emailResult.success) {
-                    console.log('✅ Email sent to:', student.parent_email);
-                } else {
-                    console.log('⚠️ Email failed:', emailResult.error);
+        // ✅ Send email in BACKGROUND (non-blocking)
+        // Don't await - let it run in background
+        const student = students[0];
+        const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
+        
+        if (student.parent_email) {
+            // Use setTimeout to send email without blocking response
+            setTimeout(async () => {
+                try {
+                    const emailService = require('../services/emailService');
+                    const emailResult = await emailService.sendRegistrationEmail(
+                        student.parent_email,
+                        studentName,
+                        student.parent_name,
+                        registrationCode,
+                        password,
+                        team_name,
+                        project_title,
+                        grade,
+                        division
+                    );
+                    if (emailResult.success) {
+                        console.log('✅ Email sent to:', student.parent_email);
+                    } else {
+                        console.log('⚠️ Email failed:', emailResult.error);
+                    }
+                } catch (emailError) {
+                    console.error('❌ Email Error:', emailError.message);
                 }
-            } else {
-                console.log('📧 No email provided, skipping email');
-            }
-        } catch (emailError) {
-            console.error('❌ Email Error:', emailError.message);
-            // Don't fail registration if email fails
+            }, 100); // Send after 100ms delay
+        } else {
+            console.log('📧 No email provided, skipping email');
         }
 
+        // ✅ Send response IMMEDIATELY (don't wait for email)
         res.json({
             success: true,
             message: 'Registration successful!',
