@@ -5,7 +5,6 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { pool } = require('../config/database');
 const QRCode = require('qrcode');
-const emailService = require('../services/emailService');
 
 // Generate Unique Code
 function generateCode(grade) {
@@ -66,13 +65,44 @@ router.post('/register', [
 
         const groupId = result.rows[0].id;
 
-        // ✅ Generate QR Code with FULL URL
+        // Generate QR Code with FULL URL
         const frontendUrl = process.env.APP_URL || 'https://science-fair-app.vercel.app';
         const qrData = `${frontendUrl}/project/${registrationCode}`;
         const qrCodeDataUrl = await QRCode.toDataURL(qrData);
 
         console.log(`✅ Registration successful! Code: ${registrationCode}`);
         console.log(`📱 QR Code URL: ${qrData}`);
+
+        // ✅ Send email confirmation (MOVED INSIDE the try block)
+        try {
+            const emailService = require('../services/emailService');
+            const student = students[0];
+            const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
+            
+            if (student.parent_email) {
+                const emailResult = await emailService.sendRegistrationEmail(
+                    student.parent_email,
+                    studentName,
+                    student.parent_name,
+                    registrationCode,
+                    password,
+                    team_name,
+                    project_title,
+                    grade,
+                    division
+                );
+                if (emailResult.success) {
+                    console.log('✅ Email sent to:', student.parent_email);
+                } else {
+                    console.log('⚠️ Email failed:', emailResult.error);
+                }
+            } else {
+                console.log('📧 No email provided, skipping email');
+            }
+        } catch (emailError) {
+            console.error('❌ Email Error:', emailError.message);
+            // Don't fail registration if email fails
+        }
 
         res.json({
             success: true,
@@ -95,32 +125,6 @@ router.post('/register', [
         });
     }
 });
-
-// Send email confirmation
-try {
-    const emailService = require('../services/emailService');
-    const student = students[0];
-    const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
-    
-    if (student.parent_email) {
-        await emailService.sendRegistrationEmail(
-            student.parent_email,
-            studentName,
-            student.parent_name,
-            registrationCode,
-            password,
-            team_name,
-            project_title,
-            grade,
-            division
-        );
-        console.log('✅ Email sent to:', student.parent_email);
-    }
-} catch (emailError) {
-    console.error('Email Error:', emailError);
-    // Don't fail registration if email fails
-}
-
 
 // ==================== STUDENT LOGIN ====================
 router.post('/login/student', [
