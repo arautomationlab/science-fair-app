@@ -74,38 +74,35 @@ router.post('/register', [
         console.log(`📱 QR Code URL: ${qrData}`);
 
         // ✅ Send email in BACKGROUND (non-blocking)
-        const student = students[0];
-        const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
-        
-        if (student.parent_email) {
-            // Send email without blocking response
-            setTimeout(async () => {
-                try {
-                    const emailService = require('../services/emailService');
-                    const emailResult = await emailService.sendRegistrationEmail(
-                        student.parent_email,
-                        studentName,
-                        student.parent_name,
-                        registrationCode,
-                        password,
-                        team_name,
-                        project_title,
-                        grade,
-                        division
-                    );
-                    if (emailResult.success) {
-                        console.log('✅ Email sent to:', student.parent_email);
-                    } else {
-                        console.log('⚠️ Email failed:', emailResult.error);
-                    }
-                } catch (emailError) {
-                    console.error('❌ Email Error:', emailError.message);
-                }
-            }, 100);
-        } else {
-            console.log('📧 No email provided, skipping email');
-        }
+        // Send email confirmation (non-blocking)
+const student = students[0];
+const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
 
+if (student.parent_email) {
+    setTimeout(async () => {
+        try {
+            const emailService = require('../services/emailService');
+            const result = await emailService.sendRegistrationEmail(
+                student.parent_email,
+                studentName,
+                student.parent_name,
+                registrationCode,
+                password,
+                team_name,
+                project_title,
+                grade,
+                division
+            );
+            if (result.success) {
+                console.log('✅ Email sent to:', student.parent_email);
+            } else {
+                console.log('⚠️ Email failed:', result.error);
+            }
+        } catch (emailError) {
+            console.error('❌ Email Error:', emailError.message);
+        }
+    }, 100);
+}
         // ✅ Send response IMMEDIATELY
         res.json({
             success: true,
