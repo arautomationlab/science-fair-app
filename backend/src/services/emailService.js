@@ -8,6 +8,8 @@ apiKey.apiKey = process.env.BREVO_API_KEY;
 async function sendRegistrationEmail(parentEmail, studentName, parentName, groupCode, password, teamName, projectTitle, grade, division) {
     try {
         console.log('📧 Sending email via Brevo to:', parentEmail);
+        console.log('📧 Sender:', process.env.BREVO_SENDER_EMAIL);
+        console.log('📧 API Key set:', process.env.BREVO_API_KEY ? '✅ Yes' : '❌ No');
 
         const sendSmtpEmail = new Brevo.SendSmtpEmail();
         sendSmtpEmail.subject = '🏫 Science Fair 2026 - Registration Confirmation';
