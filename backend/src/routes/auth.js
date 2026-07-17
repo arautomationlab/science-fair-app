@@ -74,12 +74,11 @@ router.post('/register', [
         console.log(`📱 QR Code URL: ${qrData}`);
 
         // ✅ Send email in BACKGROUND (non-blocking)
-        // Don't await - let it run in background
         const student = students[0];
         const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
         
         if (student.parent_email) {
-            // Use setTimeout to send email without blocking response
+            // Send email without blocking response
             setTimeout(async () => {
                 try {
                     const emailService = require('../services/emailService');
@@ -102,12 +101,12 @@ router.post('/register', [
                 } catch (emailError) {
                     console.error('❌ Email Error:', emailError.message);
                 }
-            }, 100); // Send after 100ms delay
+            }, 100);
         } else {
             console.log('📧 No email provided, skipping email');
         }
 
-        // ✅ Send response IMMEDIATELY (don't wait for email)
+        // ✅ Send response IMMEDIATELY
         res.json({
             success: true,
             message: 'Registration successful!',
