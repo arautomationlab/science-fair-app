@@ -75,15 +75,29 @@ router.post('/register', [
 
         // ✅ Send email in BACKGROUND (non-blocking)
         // Send email confirmation (non-blocking)
-const student = students[0];
-const studentName = `${student.firstName || ''} ${student.lastName || ''}`.trim() || 'Student';
+// ================= EMAIL SENDING =================
 
-if (student.parent_email) {
+const student = students[0];
+const studentName =
+    `${student.firstName || ""} ${student.lastName || ""}`.trim() || "Student";
+
+console.log("======================================");
+console.log("📧 Parent Email :", student.parent_email || "(No Email Entered)");
+console.log("👦 Student Name :", studentName);
+console.log("🔑 Registration :", registrationCode);
+console.log("======================================");
+
+if (student.parent_email && student.parent_email.trim() !== "") {
+
     setTimeout(async () => {
+
         try {
-            const emailService = require('../services/emailService');
-            const result = await emailService.sendRegistrationEmail(
-                student.parent_email,
+
+            const emailService = require("../services/emailService");
+
+            const emailResult = await emailService.sendRegistrationEmail(
+
+                student.parent_email.trim(),
                 studentName,
                 student.parent_name,
                 registrationCode,
@@ -92,16 +106,44 @@ if (student.parent_email) {
                 project_title,
                 grade,
                 division
+
             );
-            if (result.success) {
-                console.log('✅ Email sent to:', student.parent_email);
+
+            if (emailResult.success) {
+
+                console.log("======================================");
+                console.log("✅ EMAIL SENT SUCCESSFULLY");
+                console.log("📧 To :", student.parent_email);
+                console.log("📨 Message ID :", emailResult.messageId);
+                console.log("======================================");
+
             } else {
-                console.log('⚠️ Email failed:', result.error);
+
+                console.log("======================================");
+                console.log("❌ EMAIL FAILED");
+                console.log(emailResult.error);
+                console.log("======================================");
+
             }
-        } catch (emailError) {
-            console.error('❌ Email Error:', emailError.message);
+
+        } catch (err) {
+
+            console.error("======================================");
+            console.error("❌ EMAIL EXCEPTION");
+            console.error(err);
+            console.error("======================================");
+
         }
+
     }, 100);
+
+} else {
+
+    console.log("======================================");
+    console.log("⚠️ No parent email entered.");
+    console.log("Email skipped.");
+    console.log("======================================");
+
 }
         // ✅ Send response IMMEDIATELY
         res.json({

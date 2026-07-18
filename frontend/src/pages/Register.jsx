@@ -117,6 +117,18 @@ const Register = () => {
                 toast.error(`Invalid phone number for ${student.firstName} ${student.lastName}`);
                 return false;
             }
+            
+            if (!student.parent_email || student.parent_email.trim() === "") {
+                toast.error(`Please enter parent email for ${student.firstName} ${student.lastName}`);
+                return false;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailRegex.test(student.parent_email)) {
+                toast.error(`Invalid email for ${student.firstName} ${student.lastName}`);
+                return false;
+            }
         }
 
         return true;
@@ -150,7 +162,9 @@ const Register = () => {
 
             if (response.data.success) {
                 setRegistrationData(response.data.data);
-                toast.success('✅ Registration successful! Confirmation sent to email.');
+                toast.success(
+                    "Registration completed successfully. Please save your Registration Code and Password."
+                );
             }
         } catch (error) {
             console.error('Registration Error:', error);
@@ -180,7 +194,7 @@ const Register = () => {
                         Registration Successful!
                     </h2>
                     <p className="text-sm text-gray-600 mb-2">
-                        Confirmation sent to parent's email
+                    Registration completed successfully.
                     </p>
 
                     <div className="bg-gray-50 p-4 rounded-lg mb-4">
@@ -444,9 +458,13 @@ const Register = () => {
 
                                 {/* Parent Email */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Parent Email (Optional)</label>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                    Parent Email *
+                                    </label>
                                     <input
                                         type="email"
+                                        name={`parent_email_${index}`}
+                                        required
                                         value={student.parent_email || ''}
                                         onChange={(e) => handleStudentChange(index, 'parent_email', e.target.value)}
                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
