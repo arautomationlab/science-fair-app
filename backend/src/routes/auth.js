@@ -77,65 +77,72 @@ router.post('/register', [
         // Send email confirmation (non-blocking)
 // ================= EMAIL SENDING =================
 
-const student = students[0];
-const studentName =
-    `${student.firstName || ""} ${student.lastName || ""}`.trim() || "Student";
+// Send confirmation email to ALL parent email addresses
+setTimeout(async () => {
 
-console.log("======================================");
-console.log("📧 Parent Email :", student.parent_email || "(No Email Entered)");
-console.log("👦 Student Name :", studentName);
-console.log("🔑 Registration :", registrationCode);
-console.log("======================================");
+    try {
 
-if (student.parent_email && student.parent_email.trim() !== "") {
+        const emailService = require("../services/emailService");
 
-    setTimeout(async () => {
+        for (const student of students) {
 
-        try {
+            const studentName =
+                `${student.firstName || ""} ${student.lastName || ""}`.trim() || "Student";
 
-            const emailService = require("../services/emailService");
+            console.log("======================================");
+            console.log("📧 Parent Email :", student.parent_email || "(No Email)");
+            console.log("👦 Student Name :", studentName);
+            console.log("🔑 Registration :", registrationCode);
+            console.log("======================================");
 
-            const emailResult = await emailService.sendRegistrationEmail(
+            if (
+                student.parent_email &&
+                student.parent_email.trim() !== ""
+            ) {
 
-                student.parent_email.trim(),
-                studentName,
-                student.parent_name,
-                registrationCode,
-                password,
-                team_name,
-                project_title,
-                grade,
-                division
+                const emailResult = await emailService.sendRegistrationEmail(
+                    student.parent_email.trim(),
+                    studentName,
+                    student.parent_name,
+                    registrationCode,
+                    password,
+                    team_name,
+                    project_title,
+                    grade,
+                    division
+                );
 
-            );
+                if (emailResult.success) {
 
-            if (emailResult.success) {
+                    console.log("======================================");
+                    console.log("✅ EMAIL SENT SUCCESSFULLY");
+                    console.log("📧 To :", student.parent_email);
+                    console.log("📨 Message ID :", emailResult.messageId);
+                    console.log("======================================");
 
-                console.log("======================================");
-                console.log("✅ EMAIL SENT SUCCESSFULLY");
-                console.log("📧 To :", student.parent_email);
-                console.log("📨 Message ID :", emailResult.messageId);
-                console.log("======================================");
+                } else {
 
-            } else {
+                    console.log("======================================");
+                    console.log("❌ EMAIL FAILED");
+                    console.log(emailResult.error);
+                    console.log("======================================");
 
-                console.log("======================================");
-                console.log("❌ EMAIL FAILED");
-                console.log(emailResult.error);
-                console.log("======================================");
+                }
 
             }
 
-        } catch (err) {
-
-            console.error("======================================");
-            console.error("❌ EMAIL EXCEPTION");
-            console.error(err);
-            console.error("======================================");
-
         }
 
-    }, 100);
+    } catch (err) {
+
+        console.error("======================================");
+        console.error("❌ EMAIL EXCEPTION");
+        console.error(err);
+        console.error("======================================");
+
+    }
+
+}, 100);
 
 } else {
 
