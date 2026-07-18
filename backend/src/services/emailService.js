@@ -1,6 +1,7 @@
-const { Resend } = require("resend");
+const axios = require("axios");
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const GAS_URL =
+  "https://script.google.com/macros/s/AKfycbxm6QdUbnFJ56JLpV3va4k35g2opLvBTizAfBWgdgMk_4NWE0dbPonDT7Rc0dGTx68ywA/exec";
 
 async function sendRegistrationEmail(
     parentEmail,
@@ -13,163 +14,108 @@ async function sendRegistrationEmail(
     grade,
     division
 ) {
+
     try {
 
-        console.log("========================================");
+        console.log("======================================");
         console.log("📧 Sending email to:", parentEmail);
-        console.log("========================================");
+        console.log("======================================");
 
-        const { data, error } = await resend.emails.send({
-
-            from: process.env.EMAIL_FROM,
-
-            to: parentEmail,
-
-            subject: "🏫 SPARK 4.0 Science Fair - Registration Confirmation",
-
-            html: `
+        const html = `
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="UTF-8">
-</head>
+<body style="font-family:Arial;background:#f4f6f9;padding:30px;">
 
-<body style="margin:0;padding:0;background:#f4f6f9;font-family:Arial,Helvetica,sans-serif;">
+<div style="max-width:700px;margin:auto;background:white;padding:30px;border-radius:10px;">
 
-<table width="100%" cellpadding="0" cellspacing="0">
-<tr>
-<td align="center">
+<h1 style="color:#0B5394;">SPARK 4.0 Science Fair</h1>
 
-<table width="700" cellpadding="25" cellspacing="0" style="background:#ffffff;margin-top:25px;border-radius:10px;">
+<h2 style="color:green;">Registration Successful ✅</h2>
 
-<tr>
-<td align="center" style="background:#0B5394;color:white;border-radius:10px 10px 0 0;">
-<h1 style="margin:0;">SPARK 4.0 Science Fair</h1>
-<p style="margin:5px 0;">Podar International School, Latur</p>
-</td>
-</tr>
+<p>Dear <b>${parentName}</b>,</p>
+
+<p>Your ward has been successfully registered.</p>
+
+<table cellpadding="8">
 
 <tr>
-<td>
-
-<h2 style="color:#1b5e20;">Registration Successful ✅</h2>
-
-<p>Dear <strong>${parentName}</strong>,</p>
-
-<p>
-Your ward has been successfully registered for
-<strong>SPARK 4.0 Science Fair</strong>.
-</p>
-
-<table cellpadding="10" cellspacing="0" width="100%" style="border-collapse:collapse;">
-
-<tr style="background:#f5f5f5;">
-<td width="35%"><strong>Student Name</strong></td>
+<td><b>Student</b></td>
 <td>${studentName}</td>
 </tr>
 
 <tr>
-<td><strong>Grade</strong></td>
-<td>${grade} - ${division}</td>
+<td><b>Grade</b></td>
+<td>${grade}-${division}</td>
 </tr>
 
-<tr style="background:#f5f5f5;">
-<td><strong>Team Name</strong></td>
+<tr>
+<td><b>Team</b></td>
 <td>${teamName}</td>
 </tr>
 
 <tr>
-<td><strong>Project Title</strong></td>
+<td><b>Project</b></td>
 <td>${projectTitle}</td>
 </tr>
 
-<tr style="background:#f5f5f5;">
-<td><strong>Registration Code</strong></td>
-<td><strong>${groupCode}</strong></td>
+<tr>
+<td><b>Registration Code</b></td>
+<td><b>${groupCode}</b></td>
 </tr>
 
 <tr>
-<td><strong>Password</strong></td>
-<td><strong>${password}</strong></td>
+<td><b>Password</b></td>
+<td><b>${password}</b></td>
 </tr>
 
 </table>
 
 <br>
 
-<div style="text-align:center;">
-
-<a href="${process.env.APP_URL}/dashboard"
-style="
-background:#0B5394;
-color:white;
-padding:14px 30px;
-text-decoration:none;
-border-radius:6px;
-display:inline-block;
-font-weight:bold;">
-Login to Dashboard
+<a href="https://science-fair-6mvha62o7-auto-rah.vercel.app/dashboard"
+style="background:#0B5394;color:white;padding:12px 24px;text-decoration:none;border-radius:5px;">
+Login Dashboard
 </a>
+
+<br><br>
+
+<p>Please keep these credentials safe.</p>
 
 </div>
 
-<br>
-
-<p>
-Please keep your Registration Code and Password safe.
-They will be required for future login.
-</p>
-
-<hr>
-
-<p style="font-size:13px;color:#666;">
-This is an automatically generated email from the
-<strong>SPARK 4.0 Science Fair Portal</strong>.
-Please do not reply to this email.
-</p>
-
-</td>
-</tr>
-
-</table>
-
-</td>
-</tr>
-</table>
-
 </body>
 </html>
-`
-        });
+`;
 
-        if (error) {
-            console.error("========================================");
-            console.error("❌ RESEND ERROR");
-            console.error(error);
-            console.error("========================================");
+        const response = await axios.post(
+            GAS_URL,
+            {
+                to: parentEmail,
+                subject: "🏫 SPARK 4.0 Science Fair Registration",
+                html: html
+            },
+            {
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }
+        );
 
-            return {
-                success: false,
-                error: error.message
-            };
-        }
-
-        console.log("========================================");
-        console.log("✅ EMAIL SENT SUCCESSFULLY");
-        console.log(data);
-        console.log("========================================");
+        console.log("✅ GAS Response:", response.data);
 
         return {
-            success: true,
-            messageId: data.id
+            success: true
         };
 
     } catch (err) {
 
-        console.error("========================================");
-        console.error("❌ EMAIL FAILED");
-        console.error(err);
-        console.error("========================================");
+        console.log("❌ GAS ERROR");
+
+        if (err.response) {
+            console.log(err.response.data);
+        } else {
+            console.log(err.message);
+        }
 
         return {
             success: false,
