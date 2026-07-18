@@ -1,30 +1,6 @@
-const dns = require("dns");
-dns.setDefaultResultOrder("ipv4first");
+const { Resend } = require("resend");
 
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: true,
-    family: 4,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-    },
-    tls: {
-        rejectUnauthorized: false
-    }
-});
-
-transporter.verify(function (error, success) {
-    if (error) {
-        console.error("❌ SMTP Verify Error");
-        console.error(error);
-    } else {
-        console.log("✅ Gmail SMTP Connected Successfully");
-    }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendRegistrationEmail(
     parentEmail,
@@ -39,11 +15,16 @@ async function sendRegistrationEmail(
 ) {
     try {
 
+        console.log("========================================");
         console.log("📧 Sending email to:", parentEmail);
+        console.log("========================================");
 
-        const mailOptions = {
-            from: `"Spark 4.0 Science Fair" <${process.env.EMAIL_USER}>`,
+        const { data, error } = await resend.emails.send({
+
+            from: process.env.EMAIL_FROM,
+
             to: parentEmail,
+
             subject: "🏫 SPARK 4.0 Science Fair - Registration Confirmation",
 
             html: `
@@ -159,26 +140,36 @@ Please do not reply to this email.
 </body>
 </html>
 `
-        };
+        });
 
-        const info = await transporter.sendMail(mailOptions);
+        if (error) {
+            console.error("========================================");
+            console.error("❌ RESEND ERROR");
+            console.error(error);
+            console.error("========================================");
+
+            return {
+                success: false,
+                error: error.message
+            };
+        }
 
         console.log("========================================");
         console.log("✅ EMAIL SENT SUCCESSFULLY");
-        console.log(info.messageId);
+        console.log(data);
         console.log("========================================");
 
         return {
             success: true,
-            messageId: info.messageId
+            messageId: data.id
         };
 
     } catch (err) {
 
-        console.log("========================================");
-        console.log("❌ EMAIL FAILED");
-        console.log(err);
-        console.log("========================================");
+        console.error("========================================");
+        console.error("❌ EMAIL FAILED");
+        console.error(err);
+        console.error("========================================");
 
         return {
             success: false,
