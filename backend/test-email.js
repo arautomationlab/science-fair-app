@@ -1,27 +1,29 @@
-require('dotenv').config();
-const { sendRegistrationEmail } = require('./src/services/emailService');
+const nodemailer = require("nodemailer");
+
+const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+        user: "viceprincipal2.latur@podar.org",
+        pass: "loqthdvjimldunjk"
+    }
+});
 
 async function testEmail() {
-    console.log('📧 Testing Brevo email...');
-    console.log('📧 BREVO_API_KEY:', process.env.BREVO_API_KEY ? '✅ Set' : '❌ Not Set');
-    console.log('📧 BREVO_SENDER_EMAIL:', process.env.BREVO_SENDER_EMAIL);
+    try {
+        const info = await transporter.sendMail({
+            from: '"SMTP Test" <viceprincipal2.latur@podar.org>',
+            to: "raheman.maths47@gmail.com",
+            subject: "SMTP Test",
+            text: "This email was sent from Nodemailer."
+        });
 
-    const result = await sendRegistrationEmail(
-        'your_personal_email@gmail.com', // 👈 CHANGE THIS to your email
-        'Test Student',
-        'Test Parent',
-        'TEST-CODE-123',
-        'test123',
-        'Test Team',
-        'Test Project',
-        '5',
-        'A'
-    );
-
-    if (result.success) {
-        console.log('✅ Test email sent successfully!');
-    } else {
-        console.log('❌ Test email failed:', result.error);
+        console.log("SUCCESS");
+        console.log(info);
+    } catch (err) {
+        console.error("FAILED");
+        console.error(err);
     }
 }
 
