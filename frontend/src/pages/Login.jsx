@@ -186,13 +186,6 @@ const Login = () => {
                                 required
                             />
                         </div>
-                        {userType === 'teacher' && (
-                            <div className="bg-green-50 p-3 rounded-lg">
-                                <p className="text-xs text-green-700">
-                                    💡 Your username is your name without spaces (e.g., chauhan.sushma)
-                                </p>
-                            </div>
-                        )}
                         
                     </>
                 )}

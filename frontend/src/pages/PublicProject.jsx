@@ -12,6 +12,13 @@ const PublicProject = () => {
     const [error, setError] = useState(null);
     const [rating, setRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
+    const [ratingStatus, setRatingStatus] = useState({ 
+        isOpen: false, 
+        message: '', 
+        fairDate: '', 
+        startTime: '', 
+        endTime: '' 
+    });
     const [comment, setComment] = useState('');
     const [submittingRating, setSubmittingRating] = useState(false);
     const [judgeCode, setJudgeCode] = useState('');
@@ -26,6 +33,7 @@ const PublicProject = () => {
     useEffect(() => {
         if (code) {
             fetchProject();
+            checkRatingStatus();
         } else {
             setError('No project code provided');
             setLoading(false);
@@ -48,6 +56,18 @@ const PublicProject = () => {
             setError(err.response?.data?.message || 'Failed to load project');
         } finally {
             setLoading(false);
+        }
+    };
+
+    // ✅ Check if ratings are open
+    const checkRatingStatus = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/ratings/status`);
+            if (response.data.success) {
+                setRatingStatus(response.data.data);
+            }
+        } catch (error) {
+            console.error('Rating Status Error:', error);
         }
     };
 
@@ -351,14 +371,12 @@ const PublicProject = () => {
                     <div className="space-y-1">
                         {students.length > 0 ? (
                             students.map((student, idx) => {
-                                // ✅ Combine name fields
                                 const fullName = [
                                     student.firstName || '',
                                     student.middleName || '',
                                     student.lastName || ''
                                 ].filter(Boolean).join(' ');
                                 
-                                // ✅ Fallback to old format if exists
                                 const displayName = fullName || student.name || 'Unknown';
                                 
                                 return (
@@ -392,53 +410,75 @@ const PublicProject = () => {
                     </div>
                 )}
 
-                {/* Parent Rating */}
+                {/* ✅ Parent Rating - With Time Restriction */}
                 <div className="mt-6 border-t pt-6">
                     <h3 className="text-xl font-bold text-gray-700 mb-4">⭐ Rate This Project</h3>
-                    <div className="flex flex-col md:flex-row gap-6 items-start">
-                        <div className="flex-1">
-                            <div className="flex gap-1">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                        key={star}
-                                        type="button"
-                                        onClick={() => setRating(star)}
-                                        onMouseEnter={() => setHoverRating(star)}
-                                        onMouseLeave={() => setHoverRating(0)}
-                                        className="text-4xl transition"
-                                    >
-                                        <span className={star <= (hoverRating || rating) ? 'text-yellow-400' : 'text-gray-300'}>
-                                            ★
-                                        </span>
-                                    </button>
-                                ))}
+                    
+                    {!ratingStatus.isOpen ? (
+                        // 🔒 Ratings Closed - Show Message
+                        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <span className="text-3xl">🔒</span>
+                                <div>
+                                    <p className="font-semibold text-yellow-800">Parent Ratings are Not Open Yet</p>
+                                    <p className="text-sm text-yellow-700">
+                                        {ratingStatus.message || 'Ratings will be available during the Science Fair.'}
+                                    </p>
+                                    {ratingStatus.fairDate && (
+                                        <p className="text-xs text-yellow-600 mt-1">
+                                            📅 {ratingStatus.fairDate} | 🕐 {ratingStatus.startTime} AM - {ratingStatus.endTime} PM
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                            <div className="mt-2">
-                                <textarea
-                                    value={comment}
-                                    onChange={(e) => setComment(e.target.value)}
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    rows="2"
-                                    placeholder="Optional: Leave a comment..."
-                                />
+                        </div>
+                    ) : (
+                        // ✅ Ratings Open - Show Rating Form
+                        <div className="flex flex-col md:flex-row gap-6 items-start">
+                            <div className="flex-1">
+                                <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            onClick={() => setRating(star)}
+                                            onMouseEnter={() => setHoverRating(star)}
+                                            onMouseLeave={() => setHoverRating(0)}
+                                            className="text-4xl transition"
+                                        >
+                                            <span className={star <= (hoverRating || rating) ? 'text-yellow-400' : 'text-gray-300'}>
+                                                ★
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="mt-2">
+                                    <textarea
+                                        value={comment}
+                                        onChange={(e) => setComment(e.target.value)}
+                                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        rows="2"
+                                        placeholder="Optional: Leave a comment..."
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => handleRating(rating)}
+                                    disabled={submittingRating || !rating}
+                                    className={`mt-2 px-6 py-2 rounded-md text-white font-semibold ${
+                                        submittingRating || !rating
+                                            ? 'bg-gray-400 cursor-not-allowed'
+                                            : 'bg-yellow-500 hover:bg-yellow-600'
+                                    }`}
+                                >
+                                    {submittingRating ? 'Submitting...' : 'Submit Rating 🌟'}
+                                </button>
                             </div>
-                            <button
-                                onClick={() => handleRating(rating)}
-                                disabled={submittingRating || !rating}
-                                className={`mt-2 px-6 py-2 rounded-md text-white font-semibold ${
-                                    submittingRating || !rating
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-yellow-500 hover:bg-yellow-600'
-                                }`}
-                            >
-                                {submittingRating ? 'Submitting...' : 'Submit Rating 🌟'}
-                            </button>
+                            <div className="md:w-48 bg-gray-50 p-4 rounded-lg text-center">
+                                <p className="text-3xl font-bold text-yellow-500">{Number(project.average_rating || 0).toFixed(1)} ⭐</p>
+                                <p className="text-sm text-gray-500">{project.total_ratings || 0} ratings</p>
+                            </div>
                         </div>
-                        <div className="md:w-48 bg-gray-50 p-4 rounded-lg text-center">
-                            <p className="text-3xl font-bold text-yellow-500">{project.average_rating || 0} ⭐</p>
-                            <p className="text-sm text-gray-500">{project.total_ratings || 0} ratings</p>
-                        </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Judge Panel */}
