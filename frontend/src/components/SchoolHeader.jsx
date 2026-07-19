@@ -20,7 +20,6 @@ const SchoolHeader = () => {
                                 alt="Podar International School" 
                                 className="h-16 w-16 md:h-20 md:w-20 object-contain rounded-full bg-white p-1 shadow-lg border-2 border-yellow-400"
                                 onError={(e) => {
-                                    // If image fails to load, show text-based logo
                                     e.target.style.display = 'none';
                                     e.target.parentElement.innerHTML = `
                                         <div class="h-16 w-16 md:h-20 md:w-20 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-3xl shadow-lg border-2 border-yellow-400">
@@ -40,10 +39,13 @@ const SchoolHeader = () => {
                             <p className="text-xs text-blue-400 italic mt-0.5">
                                 "Excellence in Education · Empowering Young Minds"
                             </p>
+                            <p className="text-xs text-blue-400 italic mt-0.5">
+                                "Marching Towards 100 Years in Education"
+                            </p>
                         </div>
                     </div>
 
-                    {/* Event Details - Removed Countdown Timer */}
+                    {/* Event Details */}
                     <div className="flex flex-wrap items-center gap-2 justify-center md:justify-end">
                         <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-blue-900 px-4 py-1.5 rounded-full font-bold text-sm md:text-base shadow-lg flex items-center gap-2">
                             <span>⚡</span>
@@ -62,7 +64,7 @@ const SchoolHeader = () => {
                             📞 <a href="tel:+916366437866" className="hover:text-white transition">+91-63664-37866</a>
                         </span>
                         <span className="flex items-center gap-1">
-                            📧 <a href="mailto:sciencefair@podar.edu" className="hover:text-white transition">sciencefair@podar.edu</a>
+                            📧 <a href="mailto:spark4.0.sciencefair@gmail.com" className="hover:text-white transition">spark4.0.sciencefair@gmail.com</a>
                         </span>
                         <span className="flex items-center gap-1">
                             📍 Khadgoan Ring Road, Latur

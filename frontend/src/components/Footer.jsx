@@ -70,7 +70,7 @@ const Footer = () => {
                                     📱 <a href="tel:+916366437866" className="hover:text-white transition">+91-63664-37866</a>
                                 </li>
                                 <li className="flex items-center gap-2">
-                                    📧 <a href="mailto:spark4.0.sciencefair@gmail.com" className="hover:text-white transition">sciencefair@podar.edu</a>
+                                    📧 <a href="mailto:spark4.0.sciencefair@gmail.com" className="hover:text-white transition">spark4.0.sciencefair@gmail.com</a>
                                 </li>
                                 <li className="flex items-center gap-2">
                                     🕐 Mon-Fri: 8:00 AM - 4:00 PM
