@@ -193,13 +193,7 @@ const Login = () => {
                                 </p>
                             </div>
                         )}
-                        {userType === 'admin' && (
-                            <div className="bg-purple-50 p-3 rounded-lg">
-                                <p className="text-xs text-purple-700">
-                                    🔐 Default admin: username = admin, password = admin123
-                                </p>
-                            </div>
-                        )}
+                        
                     </>
                 )}
 
