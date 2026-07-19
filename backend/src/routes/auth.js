@@ -144,14 +144,7 @@ setTimeout(async () => {
 
 }, 100);
 
-} else {
 
-    console.log("======================================");
-    console.log("⚠️ No parent email entered.");
-    console.log("Email skipped.");
-    console.log("======================================");
-
-}
         // ✅ Send response IMMEDIATELY
         res.json({
             success: true,
