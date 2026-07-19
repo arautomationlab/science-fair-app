@@ -109,7 +109,8 @@ setTimeout(async () => {
                     team_name,
                     project_title,
                     grade,
-                    division
+                    division,
+                    qrCodeDataUrl
                 );
 
                 if (emailResult.success) {

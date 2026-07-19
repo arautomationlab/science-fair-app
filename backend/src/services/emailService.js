@@ -9,7 +9,8 @@ async function sendRegistrationEmail(
     teamName,
     projectTitle,
     grade,
-    division
+    division,
+    qrCodeDataUrl
 ) {
     try {
 
@@ -30,7 +31,8 @@ async function sendRegistrationEmail(
                 teamName,
                 projectTitle,
                 grade,
-                division
+                division,
+                qrCodeDataUrl
             },
             {
                 headers: {
