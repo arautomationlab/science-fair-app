@@ -2,6 +2,16 @@ import React, { useEffect } from 'react';
 import { rulesData } from '../data/rulesData';
 
 const RulesModal = ({ isOpen, onClose }) => {
+    // ✅ Move useEffect BEFORE the early return
+    useEffect(() => {
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') onClose();
+        };
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [onClose]);
+
+    // ❌ Early return AFTER all hooks
     if (!isOpen) return null;
 
     // Close on backdrop click
@@ -10,15 +20,6 @@ const RulesModal = ({ isOpen, onClose }) => {
             onClose();
         }
     };
-
-    // Close on Escape key
-    useEffect(() => {
-        const handleEscape = (e) => {
-            if (e.key === 'Escape') onClose();
-        };
-        document.addEventListener('keydown', handleEscape);
-        return () => document.removeEventListener('keydown', handleEscape);
-    }, [onClose]);
 
     return (
         <div 
