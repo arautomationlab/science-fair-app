@@ -32,6 +32,10 @@ const Register = () => {
     const [loading, setLoading] = useState(false);
     const [registrationData, setRegistrationData] = useState(null);
 
+    // ✅ Declaration States
+    const [studentDeclaration, setStudentDeclaration] = useState(false);
+    const [parentDeclaration, setParentDeclaration] = useState(false);
+
     const [formData, setFormData] = useState({
         grade: '',
         division: '',
@@ -89,6 +93,16 @@ const Register = () => {
             return false;
         }
 
+        // ✅ Check declarations
+        if (!studentDeclaration) {
+            toast.error('Please accept the Student Declaration');
+            return false;
+        }
+        if (!parentDeclaration) {
+            toast.error('Please accept the Parent Declaration');
+            return false;
+        }
+
         for (let i = 0; i < formData.students.length; i++) {
             const student = formData.students[i];
             
@@ -124,7 +138,6 @@ const Register = () => {
             }
 
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
             if (!emailRegex.test(student.parent_email)) {
                 toast.error(`Invalid email for ${student.firstName} ${student.lastName}`);
                 return false;
@@ -152,7 +165,9 @@ const Register = () => {
                 project_title: formData.project_title,
                 abstract: formData.abstract,
                 participants: formData.participants,
-                students: formData.students
+                students: formData.students,
+                studentDeclaration: studentDeclaration,
+                parentDeclaration: parentDeclaration
             };
 
             const response = await axios.post(
@@ -194,7 +209,7 @@ const Register = () => {
                         Registration Successful!
                     </h2>
                     <p className="text-sm text-gray-600 mb-2">
-                    Registration completed successfully.
+                        Registration completed successfully.
                     </p>
 
                     <div className="bg-gray-50 p-4 rounded-lg mb-4">
@@ -459,7 +474,7 @@ const Register = () => {
                                 {/* Parent Email */}
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">
-                                    Parent Email *
+                                        Parent Email *
                                     </label>
                                     <input
                                         type="email"
@@ -475,6 +490,45 @@ const Register = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+
+                {/* ✅ DECLARATIONS SECTION - ABOVE SUBMIT BUTTON */}
+                <div className="border-t pt-4 mt-4">
+                    <h3 className="text-lg font-semibold text-blue-600 mb-3">
+                        📜 Declarations
+                    </h3>
+
+                    {/* Student Declaration */}
+                    <div className="bg-blue-50 p-3 rounded-lg mb-3 border border-blue-200">
+                        <label className="flex items-start gap-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={studentDeclaration}
+                                onChange={(e) => setStudentDeclaration(e.target.checked)}
+                                className="mt-1 w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                required
+                            />
+                            <span className="text-sm text-gray-700">
+                                <strong>🔅 Student Declaration:</strong> I agree to abide by all the rules and guidelines of the Science Project Competition. The decision of the judges and organizing committee will be final.
+                            </span>
+                        </label>
+                    </div>
+
+                    {/* Parent Declaration */}
+                    <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                        <label className="flex items-start gap-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={parentDeclaration}
+                                onChange={(e) => setParentDeclaration(e.target.checked)}
+                                className="mt-1 w-5 h-5 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                                required
+                            />
+                            <span className="text-sm text-gray-700">
+                                <strong>🔅 Parent Declaration:</strong> I have read and understood the project guidelines and support my child in adhering to the rules of the competition.
+                            </span>
+                        </label>
+                    </div>
                 </div>
 
                 {/* Submit Button */}
