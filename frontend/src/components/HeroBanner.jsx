@@ -30,6 +30,37 @@ const HeroBanner = () => {
         return () => clearInterval(timer);
     }, []);
 
+    // Achievement Data
+    const achievements = [
+        {
+            id: 1,
+            icon: '🤖',
+            title: 'IIT Bombay Techfest',
+            subtitle: 'Meshmerize Line Follower Robot',
+            year: '2025-26',
+            badge: '🏆 Winner',
+            color: 'from-orange-400 to-red-500'
+        },
+        {
+            id: 2,
+            icon: '🏅',
+            title: 'MANAK Science Exhibition',
+            subtitle: 'District Level Winner',
+            year: '2025-26',
+            badge: '🏆 Winner',
+            color: 'from-blue-400 to-indigo-500'
+        },
+        {
+            id: 3,
+            icon: '🇮🇳',
+            title: 'Viksit Bharat Buildathon',
+            subtitle: 'National Level Competition',
+            year: '2025',
+            badge: '🏆 Participant',
+            color: 'from-green-400 to-emerald-500'
+        }
+    ];
+
     // Card Component
     const TimeCard = ({ value, label }) => {
         return (
@@ -47,7 +78,7 @@ const HeroBanner = () => {
     };
 
     return (
-        <div className="relative overflow-hidden bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 text-white min-h-[500px] flex items-center">
+        <div className="relative overflow-hidden bg-gradient-to-r from-blue-900 via-blue-800 to-blue-700 text-white min-h-[550px] flex items-center">
             <div 
                 className="absolute inset-0 bg-cover bg-center"
                 style={{
@@ -60,7 +91,7 @@ const HeroBanner = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-blue-900/85 via-blue-800/75 to-blue-700/65"></div>
             
             <div className="relative z-10 max-w-7xl mx-auto px-4 py-12 w-full">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                     
                     {/* LEFT COLUMN */}
                     <div className="text-center lg:text-left">
@@ -86,6 +117,39 @@ const HeroBanner = () => {
                         <p className="text-md text-blue-300 mb-4">
                             Podar International School, Latur · Khadgoan Ring Road
                         </p>
+
+                        {/* 🏆 ACHIEVEMENTS SECTION - ADDED HERE */}
+                        <div className="mb-4">
+                            <h2 className="text-sm md:text-base font-bold text-yellow-400 mb-2 flex items-center gap-2 justify-center lg:justify-start">
+                                <span>🏆</span>
+                                <span>Spark 3.0 Achievements</span>
+                            </h2>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                {achievements.map((item) => (
+                                    <div 
+                                        key={item.id}
+                                        className={`bg-gradient-to-br ${item.color} p-[2px] rounded-xl shadow-lg hover:scale-105 transition-transform duration-300`}
+                                    >
+                                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2 text-center h-full">
+                                            <div className="text-xl mb-0.5">{item.icon}</div>
+                                            <h3 className="text-white font-bold text-xs">
+                                                {item.title}
+                                            </h3>
+                                            <p className="text-blue-200 text-[10px]">
+                                                {item.subtitle}
+                                            </p>
+                                            <p className="text-yellow-300 text-[10px] font-medium">
+                                                {item.year}
+                                            </p>
+                                            <span className="inline-block mt-0.5 bg-yellow-400/20 text-yellow-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-400/30">
+                                                {item.badge}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                         
                         <div className="bg-black/30 backdrop-blur-sm rounded-xl p-4 mb-4 border border-yellow-400/30 inline-block">
                             <div className="flex items-center gap-3">
@@ -109,7 +173,7 @@ const HeroBanner = () => {
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN - Results Marquee using JavaScript Animation */}
+                    {/* RIGHT COLUMN - Results Marquee */}
                     <div className="h-[450px] lg:h-[480px]">
                         <ResultsMarqueeInHero />
                     </div>
@@ -119,13 +183,13 @@ const HeroBanner = () => {
     );
 };
 
-// Results Marquee with JavaScript Animation (Smooth Continuous Scrolling)
+// Results Marquee with JavaScript Animation
 const ResultsMarqueeInHero = () => {
     const containerRef = useRef(null);
     const contentRef = useRef(null);
     const animationRef = useRef(null);
     const [results, setResults] = useState([]);
-    const scrollSpeed = 0.8; // pixels per frame (adjust for speed)
+    const scrollSpeed = 0.8;
 
     const lastYearData = [
         // ===== GRADE 3 =====
@@ -133,7 +197,6 @@ const ResultsMarqueeInHero = () => {
         { position: 2, grade: 3, division: "Humbles", team: "3D model on health and hygiene", students: "Laiba Fatima Iliyas Chisti, Shambhavi Sagar Kulkarni" },
         { position: 3, grade: 3, division: "Brilliants", team: "Elevator (pully)", students: "Manasvi Swapnil Patil, Devanshi Dinesh Gulbile, Deetya Vyanktesh Ninawe" },
         { position: 3, grade: 3, division: "Fantastics", team: "Food pyramid", students: "Devika Balasaheb Jawale, Shivam Rajeswar Tondare" },
-
         // ===== GRADE 4 =====
         { position: 1, grade: 4, division: "Aspirants", team: "Robot", students: "Pawar Sayani Sachin, Patil Aaradhya Gajanan, Indalkar Swanandi Subhashrao" },
         { position: 2, grade: 4, division: "Aspirants", team: "Rain water harvesting", students: "Aarush Seshrao Jadhav, Ashutosh Santosh Bendre" },
@@ -141,38 +204,32 @@ const ResultsMarqueeInHero = () => {
         { position: 2, grade: 4, division: "Champians", team: "Working Model on Health Hygiene", students: "Anvita Ajay Fugate, Jigisha Rakesh Swami" },
         { position: 2, grade: 4, division: "Fantastics", team: "Hydraulic machine (Crane)", students: "Manas Mohankumar Shete, Reyansh Basweshwar Kavthale, Devansh Jayraj Nagthane" },
         { position: 3, grade: 4, division: "Gems", team: "Human Organs", students: "Ilisha Mahesh Kondekar, Rajeswari Vikas Jadhav" },
-
         // ===== GRADE 5 =====
         { position: 1, grade: 5, division: "Enthuziasts", team: "Energy conservation", students: "Karande Jayvardhan Dhananjay, Karad Vedant Nagnath" },
         { position: 2, grade: 5, division: "Enthuziasts", team: "Smart farm", students: "Kolekar Samarth Bhaskar, Shelke Manan Vivekanand" },
         { position: 3, grade: 5, division: "Brilliants", team: "Water Conservation", students: "Maahi Vilas Lagaskar, Ishani Dattatray Mule" },
-
         // ===== GRADE 6 =====
         { position: 1, grade: 6, division: "Diligents", team: "Solar and wind energy", students: "Riddhi Pramod Hogale, Drushti Ramesh Rathod" },
         { position: 1, grade: 6, division: "Innovatives", team: "Prevention of pollution", students: "Deshmukh Ishwari Deepak, Ambure Pranjal Vijay" },
         { position: 2, grade: 6, division: "Fantastics", team: "Door Automation", students: "Jadhav Rajnandini Vikas, Nanaware Swarali Santosh, Suryawanshi Vidya Nagnath" },
         { position: 3, grade: 6, division: "Diligents", team: "Air Pollution controlling unit", students: "Lamture Ayan Priyanka, Khadap Shivnarayan Laxman, Bombale Sainath Dnyaneshwar" },
         { position: 3, grade: 6, division: "Innovatives", team: "Levitation power and magnetism", students: "Pawar Yuvraj Nagesh, Nengule Shaurya Saudagar, Mulani Asad Baksar" },
-
         // ===== GRADE 7 =====
         { position: 1, grade: 7, division: "Fantastics", team: "City & Village", students: "Satpute Pranali Ramkishan, Biradar Trushika Chandrashekhar, Gandale Arshatee Govind" },
         { position: 2, grade: 7, division: "Diligents", team: "Waste Management", students: "Dewansh Narayan Nagmode, Om Ganesh Bhave, Viraj Shrinivas Kamble" },
         { position: 2, grade: 7, division: "Enthuziasts", team: "Sensor Factory", students: "Sangwe Arpita Santosh, Jamadar Aayat Salim" },
         { position: 3, grade: 7, division: "Diligents", team: "Raagwani (Flute) LumiFlow (Solar Irrigation)", students: "Samiksha Bharat Kamble, Rajnandini Manoj Digrase, Abhinya Ajit Patil" },
         { position: 3, grade: 7, division: "Fantastics", team: "Automated Animal Safety System", students: "Satpute Sankalp Santosh, Shinde Prithviraj Shailesh, Pandge Ayush Mahesh" },
-
         // ===== GRADE 8 =====
         { position: 1, grade: 8, division: "Diligents", team: "Smart City Model", students: "Arush Santosh Dawalji, Ayush Ravikiran Bhatambre" },
         { position: 1, grade: 8, division: "Innovatives", team: "Baby health monitoring facility", students: "Janhavi Bhaurao Yadav" },
         { position: 2, grade: 8, division: "Gems", team: "Smart Helmet / Mine Guard", students: "Aditya Anand Ganjure, Mahesh Shekher Deshmukh" },
         { position: 2, grade: 8, division: "Innovatives", team: "Agrozen", students: "Abhimanyu Sachin Deshmukh, Madhuresh Someshwar Gujrathi" },
         { position: 3, grade: 8, division: "Humbles", team: "Smart City", students: "Vedant Balaji Kakade, Viresh Umesh Rathod, Vighnesh Umesh Rathod" },
-
         // ===== GRADE 9 =====
         { position: 1, grade: 9, division: "Champians", team: "Aeroplane crash safety system", students: "Samarth Prashant Bhad, Advay Pramod Tike, Chaitanya Deepak Dadge" },
         { position: 2, grade: 9, division: "Enthuziasts", team: "Street electricity plant", students: "Aditya Ashok Sawant, Tanmay Anil Salve, Viren Manish Mudkanna" },
         { position: 3, grade: 9, division: "Diligents", team: "Study Bot AI", students: "Kshitij Sanjay Autade, Avanish Ravi Rajurkar" },
-
         // ===== GRADE 10 =====
         { position: 1, grade: 10, division: "Innovatives", team: "Anti-Accident Device", students: "Belure Yash Chandrashekhar, Jadhav Chaitanya Anil, Sajjan Rudraraj Ramesh" },
         { position: 2, grade: 10, division: "Innovatives", team: "Seed to success: A Comprehensive Project", students: "Anushka Shrikant Gilda, Kadam Eshwari Ganesh" },
@@ -180,7 +237,6 @@ const ResultsMarqueeInHero = () => {
     ];
 
     useEffect(() => {
-        // Duplicate data for seamless scrolling
         const duplicated = [...lastYearData, ...lastYearData, ...lastYearData, ...lastYearData];
         setResults(duplicated);
     }, []);
@@ -198,7 +254,6 @@ const ResultsMarqueeInHero = () => {
             if (!isPaused && content) {
                 position += scrollSpeed;
                 
-                // Reset position when content has scrolled enough
                 if (position >= content.scrollHeight / 3) {
                     position = 0;
                 }
@@ -208,7 +263,6 @@ const ResultsMarqueeInHero = () => {
             animationRef.current = requestAnimationFrame(animate);
         };
 
-        // Pause on hover
         const handleMouseEnter = () => { isPaused = true; };
         const handleMouseLeave = () => { isPaused = false; };
 
@@ -250,7 +304,6 @@ const ResultsMarqueeInHero = () => {
                 </div>
             </div>
 
-            {/* Marquee Container */}
             <div className="pt-10 pb-3 overflow-hidden h-[420px] relative">
                 <div 
                     ref={contentRef}
@@ -289,7 +342,6 @@ const ResultsMarqueeInHero = () => {
                 </div>
             </div>
 
-            {/* Bottom Gradient */}
             <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-blue-950 to-transparent"></div>
         </div>
     );
