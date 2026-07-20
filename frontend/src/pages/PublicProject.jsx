@@ -21,14 +21,6 @@ const PublicProject = () => {
     });
     const [comment, setComment] = useState('');
     const [submittingRating, setSubmittingRating] = useState(false);
-    const [judgeCode, setJudgeCode] = useState('');
-    const [showJudgePanel, setShowJudgePanel] = useState(false);
-    const [judgeScore, setJudgeScore] = useState({
-        judge_name: '',
-        score: '',
-        comments: ''
-    });
-    const [submittingJudge, setSubmittingJudge] = useState(false);
 
     useEffect(() => {
         if (code) {
@@ -112,47 +104,6 @@ const PublicProject = () => {
             toast.error(error.response?.data?.message || 'Failed to submit rating');
         } finally {
             setSubmittingRating(false);
-        }
-    };
-
-    const handleJudgeSubmit = async (e) => {
-        e.preventDefault();
-        if (!judgeScore.judge_name || !judgeScore.score) {
-            toast.error('Please fill all judge fields');
-            return;
-        }
-
-        setSubmittingJudge(true);
-        try {
-            const response = await axios.post(`${API_URL}/api/judge/score`, {
-                registration_code: code,
-                judge_name: judgeScore.judge_name,
-                score: parseInt(judgeScore.score),
-                comments: judgeScore.comments
-            });
-
-            if (response.data.success) {
-                toast.success('Judge score submitted! ✅');
-                setJudgeScore({ judge_name: '', score: '', comments: '' });
-                setShowJudgePanel(false);
-                setJudgeCode('');
-                fetchProject();
-            }
-        } catch (error) {
-            console.error('Judge Error:', error);
-            toast.error(error.response?.data?.message || 'Failed to submit score');
-        } finally {
-            setSubmittingJudge(false);
-        }
-    };
-
-    const handleJudgeCodeSubmit = (e) => {
-        e.preventDefault();
-        if (judgeCode === 'JUDGE2026') {
-            setShowJudgePanel(true);
-            toast.success('Access granted!');
-        } else {
-            toast.error('Invalid judge code');
         }
     };
 
@@ -415,7 +366,6 @@ const PublicProject = () => {
                     <h3 className="text-xl font-bold text-gray-700 mb-4">⭐ Rate This Project</h3>
                     
                     {!ratingStatus.isOpen ? (
-                        // 🔒 Ratings Closed - Show Message
                         <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
                             <div className="flex items-center gap-3">
                                 <span className="text-3xl">🔒</span>
@@ -433,7 +383,6 @@ const PublicProject = () => {
                             </div>
                         </div>
                     ) : (
-                        // ✅ Ratings Open - Show Rating Form
                         <div className="flex flex-col md:flex-row gap-6 items-start">
                             <div className="flex-1">
                                 <div className="flex gap-1">
@@ -481,90 +430,24 @@ const PublicProject = () => {
                     )}
                 </div>
 
-                {/* Judge Panel */}
+                {/* ✅ Judge Panel Link */}
                 <div className="mt-6 border-t pt-6">
                     <h3 className="text-xl font-bold text-gray-700 mb-4">👨‍⚖️ Judge Panel</h3>
-                    
-                    {!showJudgePanel ? (
-                        <form onSubmit={handleJudgeCodeSubmit} className="flex flex-wrap gap-4 items-end">
-                            <div className="flex-1 min-w-[200px]">
-                                <label className="block text-sm font-medium text-gray-700">Enter Judge Access Code</label>
-                                <input
-                                    type="password"
-                                    value={judgeCode}
-                                    onChange={(e) => setJudgeCode(e.target.value)}
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    placeholder="Enter the judge code"
-                                    required
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-                            >
-                                Access Judge Panel
-                            </button>
-                        </form>
-                    ) : (
-                        <form onSubmit={handleJudgeSubmit} className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Judge Name *</label>
-                                    <input
-                                        type="text"
-                                        value={judgeScore.judge_name}
-                                        onChange={(e) => setJudgeScore({ ...judgeScore, judge_name: e.target.value })}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                        placeholder="Enter your name"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Score (0-100) *</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max="100"
-                                        value={judgeScore.score}
-                                        onChange={(e) => setJudgeScore({ ...judgeScore, score: e.target.value })}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                        placeholder="Enter score"
-                                        required
-                                    />
-                                </div>
-                            </div>
+                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                        <div className="flex items-center gap-3">
+                            <span className="text-3xl">⚖️</span>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Comments</label>
-                                <textarea
-                                    value={judgeScore.comments}
-                                    onChange={(e) => setJudgeScore({ ...judgeScore, comments: e.target.value })}
-                                    rows="2"
-                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                    placeholder="Additional comments..."
-                                />
-                            </div>
-                            <div className="flex gap-3">
+                                <p className="font-semibold text-blue-800">Judges: Click below to enter the judge panel</p>
+                                <p className="text-sm text-blue-600 mt-1">You will need the judge access code to proceed.</p>
                                 <button
-                                    type="submit"
-                                    disabled={submittingJudge}
-                                    className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
+                                    onClick={() => window.open(`/judge/${code}`, '_blank')}
+                                    className="mt-3 bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
                                 >
-                                    {submittingJudge ? 'Submitting...' : 'Submit Judge Score ✅'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowJudgePanel(false);
-                                        setJudgeCode('');
-                                    }}
-                                    className="bg-gray-400 text-white px-6 py-2 rounded-md hover:bg-gray-500"
-                                >
-                                    Cancel
+                                    👨‍⚖️ Enter Judge Panel
                                 </button>
                             </div>
-                        </form>
-                    )}
-                    <p className="text-xs text-gray-400 mt-2">🔑 Judges: Contact the administrator for the access code</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
