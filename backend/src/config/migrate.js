@@ -121,9 +121,10 @@ async function migrate() {
         const teachers = [
             'Chauhan Sushma', 'Dharne Rekha', 'Chamedia Aarti', 'Nazneen Pathan',
             'Pankaja Sherkhane', 'Sandya S.R.', 'Bidarkar Neelam', 'Balaji Hude',
-            'Patil Smita', 'Udgire Swati', 'Gupta Premalata', 'Shaikh Naaz',
+            'Patil Smita', 'Udgire Swati', 'Gupta Premlata', 'Shaikh Naaz',
             'Gaikwad Satish', 'Kadam Sachin', 'Gore Sharad', 'Raut Monali',
-            'Kondekar Surekha', 'Tapade Madhuri', 'Ingle Ravindra'
+            'Kondekar Surekha', 'Tapade Madhuri', 'Ingle Ravindra', 
+            'Inamdar Mastura', 'Patil Sujata'
         ];
 
         let teacherCount = 0;

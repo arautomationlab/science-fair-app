@@ -14,7 +14,7 @@ const TEACHERS = [
     { id: 8, name: 'Balaji Hude' },
     { id: 9, name: 'Patil Smita' },
     { id: 10, name: 'Udgire Swati' },
-    { id: 11, name: 'Gupta Premalata' },
+    { id: 11, name: 'Gupta Premlata' },
     { id: 12, name: 'Shaikh Naaz' },
     { id: 13, name: 'Gaikwad Satish' },
     { id: 14, name: 'Kadam Sachin' },
@@ -22,7 +22,9 @@ const TEACHERS = [
     { id: 16, name: 'Raut Monali' },
     { id: 17, name: 'Kondekar Surekha' },
     { id: 18, name: 'Tapade Madhuri' },
-    { id: 19, name: 'Ingle Ravindra' }
+    { id: 19, name: 'Ingle Ravindra' },
+    { id: 20, name: 'Inamdar Mastura' },
+    { id: 21, name: 'Patil Sujata' }
 ];
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
