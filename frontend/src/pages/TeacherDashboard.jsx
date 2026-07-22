@@ -62,10 +62,9 @@ const TeacherDashboard = () => {
         }
     };
 
-        const fetchStats = async () => {
+    const fetchStats = async () => {
         try {
             const token = localStorage.getItem('token');
-            // ✅ FIXED
             const response = await axios.get(
                 `${API_URL}/api/teacher/my-stats`,
                 {
@@ -106,10 +105,18 @@ const TeacherDashboard = () => {
         setFilters({ grade: '', division: '', status: '' });
     };
 
+    // ✅ Helper function to get student full name
+    const getStudentFullName = (student) => {
+        const firstName = student.firstName || '';
+        const middleName = student.middleName || '';
+        const lastName = student.lastName || '';
+        const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+        return fullName || student.name || 'Unknown';
+    };
+
     // Export to Excel
     const exportToExcel = () => {
         const exportData = filteredProjects.map(p => {
-            // ✅ Handle students_data safely
             let students = [];
             try {
                 if (typeof p.students_data === 'string') {
@@ -131,7 +138,7 @@ const TeacherDashboard = () => {
                 'Project Title': p.project_title || '',
                 'Grade': p.grade || '',
                 'Division': p.division || '',
-                'Students': students.map(s => s.name || '').join(', '),
+                'Students': students.map(s => getStudentFullName(s)).join(', '),
                 'Parents': students.map(s => s.parent_name || '').join(', '),
                 'Parent Contacts': students.map(s => s.parent_phone || '').join(', '),
                 'Teacher Guide': p.teacher_guide || 'N/A',
@@ -308,7 +315,7 @@ const TeacherDashboard = () => {
                                 </tr>
                             ) : (
                                 filteredProjects.map((project, index) => {
-                                    // ✅ Safe parsing of students_data
+                                    // ✅ Safe parsing of students_data with full name
                                     let students = [];
                                     try {
                                         if (typeof project.students_data === 'string') {
@@ -323,6 +330,15 @@ const TeacherDashboard = () => {
                                         students = [];
                                     }
 
+                                    // ✅ Get student names with full name
+                                    const studentNames = students.map(s => {
+                                        const firstName = s.firstName || '';
+                                        const middleName = s.middleName || '';
+                                        const lastName = s.lastName || '';
+                                        const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+                                        return fullName || s.name || 'Unknown';
+                                    }).join(', ');
+
                                     return (
                                         <tr key={project.id} className="hover:bg-gray-50">
                                             <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
@@ -332,7 +348,7 @@ const TeacherDashboard = () => {
                                             </td>
                                             <td className="px-4 py-3">{project.grade || 'N/A'} - {project.division || 'N/A'}</td>
                                             <td className="px-4 py-3 text-sm">
-                                                {students.map(s => s.name || '').join(', ')}
+                                                {studentNames || 'No students'}
                                             </td>
                                             <td className="px-4 py-3">
                                                 <span className={`px-2 py-1 rounded-full text-xs ${
