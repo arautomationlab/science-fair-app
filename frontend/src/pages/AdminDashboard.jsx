@@ -20,6 +20,7 @@ const AdminDashboard = () => {
         status: ''
     });
     const [showExportModal, setShowExportModal] = useState(false);
+    const [showRegistrations, setShowRegistrations] = useState(false);
 
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem('user'));
@@ -112,6 +113,59 @@ const AdminDashboard = () => {
         const lastName = student.lastName || '';
         const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
         return fullName || student.name || 'Unknown';
+    };
+
+    // ✅ Export Registrations to Excel
+    const exportRegistrationsToExcel = () => {
+        const exportData = projects.map(p => {
+            let students = [];
+            try {
+                if (typeof p.students_data === 'string') {
+                    students = JSON.parse(p.students_data || '[]');
+                } else if (Array.isArray(p.students_data)) {
+                    students = p.students_data;
+                } else if (p.students_data && typeof p.students_data === 'object') {
+                    students = Object.values(p.students_data);
+                } else {
+                    students = [];
+                }
+            } catch (e) {
+                students = [];
+            }
+
+            return {
+                'Registration Code': p.registration_code || '',
+                'Team Name': p.team_name || '',
+                'Project Title': p.project_title || '',
+                'Grade': p.grade || '',
+                'Division': p.division || '',
+                'Teacher Guide': p.teacher_guide || 'N/A',
+                'Students': students.map(s => getStudentFullName(s)).join(', '),
+                'Parents': students.map(s => s.parent_name || '').join(', '),
+                'Parent Contacts': students.map(s => s.parent_phone || '').join(', '),
+                'Parent Emails': students.map(s => s.parent_email || '').join(', '),
+                'Status': p.project_submitted ? 'Submitted' : 'Pending',
+                'Registration Date': p.created_at ? new Date(p.created_at).toLocaleDateString() : '',
+                'Registration Time': p.created_at ? new Date(p.created_at).toLocaleTimeString() : ''
+            };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Registrations');
+        
+        const colWidths = [
+            { wch: 25 }, { wch: 25 }, { wch: 30 }, { wch: 8 },
+            { wch: 10 }, { wch: 25 }, { wch: 30 }, { wch: 25 },
+            { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 },
+            { wch: 15 }
+        ];
+        ws['!cols'] = colWidths;
+
+        const filename = `All_Registrations_${new Date().toISOString().slice(0,10)}.xlsx`;
+        XLSX.writeFile(wb, filename);
+        toast.success('📊 Registrations exported successfully!');
+        setShowExportModal(false);
     };
 
     const exportToExcel = () => {
@@ -306,6 +360,42 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
+            {/* ✅ NEW: Registration Summary Section */}
+            <div className="bg-white rounded-lg shadow-lg p-4 mb-6 border-l-4 border-blue-500">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-800">📋 Registration Summary</h3>
+                        <p className="text-sm text-gray-500">Total Registrations: <strong>{totalProjects}</strong></p>
+                    </div>
+                    <button
+                        onClick={exportRegistrationsToExcel}
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2 text-sm"
+                    >
+                        📊 Export Registrations
+                    </button>
+                </div>
+                
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                    <div className="bg-blue-50 p-2 rounded">
+                        <p className="text-xs text-gray-500">Total Students</p>
+                        <p className="text-lg font-bold text-blue-600">{totalStudents}</p>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded">
+                        <p className="text-xs text-gray-500">Projects Submitted</p>
+                        <p className="text-lg font-bold text-green-600">{submittedProjects}</p>
+                    </div>
+                    <div className="bg-yellow-50 p-2 rounded">
+                        <p className="text-xs text-gray-500">Pending Submissions</p>
+                        <p className="text-lg font-bold text-yellow-600">{totalProjects - submittedProjects}</p>
+                    </div>
+                    <div className="bg-purple-50 p-2 rounded">
+                        <p className="text-xs text-gray-500">Teachers Assigned</p>
+                        <p className="text-lg font-bold text-purple-600">{teachers.length}</p>
+                    </div>
+                </div>
+            </div>
+
             {/* Grade-wise Progress */}
             <div className="mb-6">
                 <h3 className="font-semibold text-gray-700 mb-3">📊 Grade-wise Progress</h3>
@@ -417,7 +507,6 @@ const AdminDashboard = () => {
                                 </tr>
                             ) : (
                                 filteredProjects.map((project, index) => {
-                                    // ✅ Parse students with full name
                                     let students = [];
                                     try {
                                         if (typeof project.students_data === 'string') {
@@ -432,7 +521,6 @@ const AdminDashboard = () => {
                                         students = [];
                                     }
 
-                                    // ✅ Get student names with full name
                                     const studentNames = students.map(s => {
                                         const firstName = s.firstName || '';
                                         const middleName = s.middleName || '';
@@ -524,28 +612,32 @@ const AdminDashboard = () => {
             {showExportModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg p-6 max-w-md w-full">
-                        <h3 className="text-xl font-bold text-gray-800 mb-4">📊 Export All Projects</h3>
+                        <h3 className="text-xl font-bold text-gray-800 mb-4">📊 Export Options</h3>
                         <p className="text-gray-600 mb-4">
-                            Exporting {filteredProjects.length} projects 
-                            {filters.grade ? ` (Grade ${filters.grade})` : ''}
-                            {filters.teacher ? ` (${filters.teacher})` : ''}
+                            Choose what you want to export:
                         </p>
-                        <div className="flex gap-3">
+                        <div className="flex flex-col gap-3">
                             <button
                                 onClick={exportToExcel}
-                                className="flex-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                                className="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
                             >
-                                📊 Excel
+                                📊 Export Projects
+                            </button>
+                            <button
+                                onClick={exportRegistrationsToExcel}
+                                className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+                            >
+                                📋 Export Registrations
                             </button>
                             <button
                                 onClick={exportToPDF}
-                                className="flex-1 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                                className="w-full bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                             >
-                                📄 PDF
+                                📄 Export as PDF
                             </button>
                             <button
                                 onClick={() => setShowExportModal(false)}
-                                className="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                                className="w-full bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
                             >
                                 Cancel
                             </button>
