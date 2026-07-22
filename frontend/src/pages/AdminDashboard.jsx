@@ -105,6 +105,15 @@ const AdminDashboard = () => {
         navigate(`/admin/winners/${grade}`);
     };
 
+    // ✅ Helper function to get student full name
+    const getStudentFullName = (student) => {
+        const firstName = student.firstName || '';
+        const middleName = student.middleName || '';
+        const lastName = student.lastName || '';
+        const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+        return fullName || student.name || 'Unknown';
+    };
+
     const exportToExcel = () => {
         const exportData = filteredProjects.map(p => {
             let students = [];
@@ -128,7 +137,7 @@ const AdminDashboard = () => {
                 'Project Title': p.project_title || '',
                 'Grade': p.grade || '',
                 'Division': p.division || '',
-                'Students': students.map(s => s.name || '').join(', '),
+                'Students': students.map(s => getStudentFullName(s)).join(', '),
                 'Parents': students.map(s => s.parent_name || '').join(', '),
                 'Parent Contacts': students.map(s => s.parent_phone || '').join(', '),
                 'Teacher Guide': p.teacher_guide || 'N/A',
@@ -162,51 +171,48 @@ const AdminDashboard = () => {
         window.print();
         setShowExportModal(false);
     };
-    // Add this function inside your AdminDashboard component
-const deleteProject = async (projectId, projectName) => {
-    // Show confirmation dialog
-    if (!window.confirm(`⚠️ Are you sure you want to delete the project "${projectName}"?\n\nThis will permanently delete:\n• All project details\n• All judge scores\n• All parent ratings\n• The group itself\n\nThis action CANNOT be undone!`)) {
-        return;
-    }
 
-    // Second confirmation for safety
-    if (!window.confirm(`🔴 FINAL WARNING: Are you absolutely sure? This action is permanent!`)) {
-        return;
-    }
-
-    try {
-        const token = localStorage.getItem('token');
-        const response = await axios.delete(
-            `${API_URL}/api/admin/project/${projectId}`,
-            {
-                headers: { 'Authorization': `Bearer ${token}` }
-            }
-        );
-
-        if (response.data.success) {
-            toast.success(response.data.message);
-            // Refresh the data
-            fetchAllData();
-        } else {
-            toast.error(response.data.message || 'Failed to delete project');
+    // Delete Project function
+    const deleteProject = async (projectId, projectName) => {
+        if (!window.confirm(`⚠️ Are you sure you want to delete the project "${projectName}"?\n\nThis will permanently delete:\n• All project details\n• All judge scores\n• All parent ratings\n• The group itself\n\nThis action CANNOT be undone!`)) {
+            return;
         }
-    } catch (error) {
-        console.error('Delete Error:', error);
-        toast.error(error.response?.data?.message || 'Failed to delete project');
-    }
-};
-    // ✅ FIXED: Proper stats calculations
+
+        if (!window.confirm(`🔴 FINAL WARNING: Are you absolutely sure? This action is permanent!`)) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.delete(
+                `${API_URL}/api/admin/project/${projectId}`,
+                {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }
+            );
+
+            if (response.data.success) {
+                toast.success(response.data.message);
+                fetchAllData();
+            } else {
+                toast.error(response.data.message || 'Failed to delete project');
+            }
+        } catch (error) {
+            console.error('Delete Error:', error);
+            toast.error(error.response?.data?.message || 'Failed to delete project');
+        }
+    };
+
+    // Stats calculations
     const totalProjects = projects.length;
     const submittedProjects = projects.filter(p => p.project_submitted).length;
     const fullyJudged = projects.filter(p => (p.judge_count || 0) >= 2).length;
     
-    // ✅ FIXED: Properly sum parent ratings
     const totalRatings = projects.reduce((sum, p) => {
         const count = parseInt(p.rating_count) || 0;
         return sum + count;
     }, 0);
     
-    // ✅ FIXED: Calculate total students
     const totalStudents = projects.reduce((sum, p) => {
         let students = [];
         try {
@@ -411,6 +417,7 @@ const deleteProject = async (projectId, projectName) => {
                                 </tr>
                             ) : (
                                 filteredProjects.map((project, index) => {
+                                    // ✅ Parse students with full name
                                     let students = [];
                                     try {
                                         if (typeof project.students_data === 'string') {
@@ -425,6 +432,15 @@ const deleteProject = async (projectId, projectName) => {
                                         students = [];
                                     }
 
+                                    // ✅ Get student names with full name
+                                    const studentNames = students.map(s => {
+                                        const firstName = s.firstName || '';
+                                        const middleName = s.middleName || '';
+                                        const lastName = s.lastName || '';
+                                        const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+                                        return fullName || s.name || 'Unknown';
+                                    }).join(', ');
+
                                     return (
                                         <tr key={project.id} className="hover:bg-gray-50">
                                             <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
@@ -435,7 +451,7 @@ const deleteProject = async (projectId, projectName) => {
                                             <td className="px-4 py-3">{project.grade || 'N/A'} - {project.division || 'N/A'}</td>
                                             <td className="px-4 py-3 text-sm">{project.teacher_guide || project.teacher_name || 'N/A'}</td>
                                             <td className="px-4 py-3 text-sm">
-                                                {students.map(s => s.name || '').join(', ')}
+                                                {studentNames || 'No students'}
                                             </td>
                                             <td className="px-4 py-3">
                                                 <span className={`px-2 py-1 rounded-full text-xs ${
@@ -456,23 +472,6 @@ const deleteProject = async (projectId, projectName) => {
                                                 ) : (
                                                     <span className="text-gray-400 text-sm">Not yet</span>
                                                 )}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <button
-                                                    onClick={() => navigate(`/project/${project.registration_code}`)}
-                                                    className="text-blue-600 hover:text-blue-900 text-sm mr-2"
-                                                >
-                                                    View
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(project.registration_code || '');
-                                                        toast.success('Code copied!');
-                                                    }}
-                                                    className="text-gray-600 hover:text-gray-900 text-sm"
-                                                >
-                                                    Copy
-                                                </button>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <button
