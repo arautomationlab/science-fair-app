@@ -65,7 +65,7 @@ INSERT INTO users (username, password, full_name, role, teacher_name) VALUES
 ('balaji.hude', '$2a$10$YourHashedPasswordHere', 'Balaji Hude', 'teacher', 'Balaji Hude'),
 ('patil.smita', '$2a$10$YourHashedPasswordHere', 'Patil Smita', 'teacher', 'Patil Smita'),
 ('udgire.swati', '$2a$10$YourHashedPasswordHere', 'Udgire Swati', 'teacher', 'Udgire Swati'),
-('gupta.premalata', '$2a$10$YourHashedPasswordHere', 'Gupta Premalata', 'teacher', 'Gupta Premalata'),
+('gupta.premalata', '$2a$10$YourHashedPasswordHere', 'Gupta Premlata', 'teacher', 'Gupta Premlata'),
 ('shaikh.naaz', '$2a$10$YourHashedPasswordHere', 'Shaikh Naaz', 'teacher', 'Shaikh Naaz'),
 ('gaikwad.satish', '$2a$10$YourHashedPasswordHere', 'Gaikwad Satish', 'teacher', 'Gaikwad Satish'),
 ('kadam.sachin', '$2a$10$YourHashedPasswordHere', 'Kadam Sachin', 'teacher', 'Kadam Sachin'),
