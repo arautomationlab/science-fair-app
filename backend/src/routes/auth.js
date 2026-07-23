@@ -375,4 +375,57 @@ router.post('/login/admin', [
     }
 });
 
+// ✅ RESET ADMIN PASSWORD (Use once, then remove or protect)
+router.post('/reset-admin-password', async (req, res) => {
+    try {
+        const { secretKey, newPassword } = req.body;
+        
+        // Secret key for security - change this to something random
+        const SECRET_KEY = 'PODAR_RESET_2026';
+        
+        if (secretKey !== SECRET_KEY) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Invalid secret key' 
+            });
+        }
+        
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Password must be at least 6 characters' 
+            });
+        }
+        
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        
+        const result = await pool.query(
+            'UPDATE users SET password = $1 WHERE role = $2 RETURNING username, role',
+            [hashedPassword, 'admin']
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Admin user not found!' 
+            });
+        }
+        
+        console.log('✅ Admin password updated successfully!');
+        
+        res.json({ 
+            success: true, 
+            message: 'Password updated successfully!',
+            username: result.rows[0].username,
+            role: result.rows[0].role
+        });
+        
+    } catch (error) {
+        console.error('Reset Password Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to reset password: ' + error.message 
+        });
+    }
+});
 module.exports = router;
