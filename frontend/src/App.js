@@ -1,5 +1,7 @@
+// frontend/src/App.js
+
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 // Pages
@@ -17,6 +19,7 @@ import ResetPassword from './pages/ResetPassword';
 // Components
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import PublicLayout from './components/PublicLayout'; // ✅ NEW
 import HeroBanner from './components/HeroBanner';
 import PrivateRoute from './components/PrivateRoute';
 import RoleRoute from './components/RoleRoute';
@@ -24,78 +27,153 @@ import RoleRoute from './components/RoleRoute';
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Navbar />
+      <Toaster position="top-right" />
+      
+      <Routes>
+        {/* ✅ PUBLIC ROUTES - Use PublicLayout (NO DASHBOARD LINKS) */}
+        <Route 
+          path="/project/:code" 
+          element={
+            <PublicLayout>
+              <PublicProject />
+            </PublicLayout>
+          } 
+        />
         
-        <main className="flex-grow">
-          <Toaster position="top-right" />
-          
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={
-              <>
-                <HeroBanner />
-                <div className="max-w-7xl mx-auto px-4 py-12">
-                  <div className="text-center">
-                    <h2 className="text-3xl font-bold text-gray-700 mb-4">
-                      🚀 Welcome to Spark 4.0
-                    </h2>
-                    <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-                      Register your team, submit innovative projects, 
-                      and compete for the top position in the Science Fair!
-                    </p>
-                  </div>
+        <Route 
+          path="/judge/:code" 
+          element={
+            <PublicLayout>
+              <JudgePanel />
+            </PublicLayout>
+          } 
+        />
+
+        {/* ✅ HOME PAGE */}
+        <Route 
+          path="/" 
+          element={
+            <>
+              <Navbar />
+              <HeroBanner />
+              <div className="max-w-7xl mx-auto px-4 py-12">
+                <div className="text-center">
+                  <h2 className="text-3xl font-bold text-gray-700 mb-4">
+                    🚀 Welcome to Spark 4.0
+                  </h2>
+                  <p className="text-gray-500 text-lg max-w-2xl mx-auto">
+                    Register your team, submit innovative projects, 
+                    and compete for the top position in the Science Fair!
+                  </p>
                 </div>
-              </>
-            } />
-            
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            
-            {/* Public Project Page - No Login Required */}
-            <Route path="/project/:code" element={<PublicProject />} />
-            
-            {/* Judge Panel - accessed via QR code */}
-            <Route path="/judge/:code" element={<JudgePanel />} />
-            
-            {/* Student Routes */}
-            <Route path="/dashboard" element={
+              </div>
+              <Footer />
+            </>
+          } 
+        />
+        
+        {/* ✅ AUTH PAGES */}
+        <Route 
+          path="/register" 
+          element={
+            <>
+              <Navbar />
+              <Register />
+              <Footer />
+            </>
+          } 
+        />
+        
+        <Route 
+          path="/login" 
+          element={
+            <>
+              <Navbar />
+              <Login />
+              <Footer />
+            </>
+          } 
+        />
+        
+        <Route 
+          path="/reset-password" 
+          element={
+            <>
+              <Navbar />
+              <ResetPassword />
+              <Footer />
+            </>
+          } 
+        />
+        
+        {/* ✅ STUDENT ROUTES */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <>
+              <Navbar />
               <PrivateRoute>
                 <Dashboard />
               </PrivateRoute>
-            } />
-            
-            <Route path="/submit-project" element={
+              <Footer />
+            </>
+          } 
+        />
+        
+        <Route 
+          path="/submit-project" 
+          element={
+            <>
+              <Navbar />
               <PrivateRoute>
                 <ProjectSubmit />
               </PrivateRoute>
-            } />
-            
-            {/* Teacher Routes */}
-            <Route path="/teacher-dashboard" element={
+              <Footer />
+            </>
+          } 
+        />
+        
+        {/* ✅ TEACHER ROUTES */}
+        <Route 
+          path="/teacher-dashboard" 
+          element={
+            <>
+              <Navbar />
               <RoleRoute allowedRoles={['teacher']}>
                 <TeacherDashboard />
               </RoleRoute>
-            } />
-            
-            {/* Admin Routes */}
-            <Route path="/admin" element={
+              <Footer />
+            </>
+          } 
+        />
+        
+        {/* ✅ ADMIN ROUTES */}
+        <Route 
+          path="/admin" 
+          element={
+            <>
+              <Navbar />
               <RoleRoute allowedRoles={['admin']}>
                 <AdminDashboard />
               </RoleRoute>
-            } />
-            
-            <Route path="/admin/winners/:grade" element={
+              <Footer />
+            </>
+          } 
+        />
+        
+        <Route 
+          path="/admin/winners/:grade" 
+          element={
+            <>
+              <Navbar />
               <RoleRoute allowedRoles={['admin']}>
                 <Winners />
               </RoleRoute>
-            } />
-          </Routes>
-        </main>
-        
-        <Footer />
-      </div>
+              <Footer />
+            </>
+          } 
+        />
+      </Routes>
     </Router>
   );
 }
