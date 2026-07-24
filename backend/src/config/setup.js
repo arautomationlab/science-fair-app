@@ -8,7 +8,7 @@ const DB_PATH = path.join(__dirname, '../../database.json');
 const teachers = [
     'Chauhan Sushma', 'Dharne Rekha', 'Chamedia Aarti', 'Nazneen Pathan',
     'Pankaja Sherkhane', 'Sandya S.R.', 'Bidarkar Neelam', 'Balaji Hude',
-    'Patil Smita', 'Udgire Swati', 'Gupta Premalata', 'Shaikh Naaz',
+    'Patil Smita', 'Udgire Swati', 'Gupta Premlata', 'Shaikh Naaz',
     'Gaikwad Satish', 'Kadam Sachin', 'Gore Sharad', 'Raut Monali',
     'Kondekar Surekha', 'Tapade Madhuri', 'Ingle Ravindra'
 ];
@@ -43,7 +43,7 @@ async function setupDatabase() {
     const adminExists = db.users.some(u => u.username === 'admin');
     if (!adminExists) {
         console.log('👤 Creating admin user...');
-        const adminPassword = await hashPassword('admin123');
+        const adminPassword = await hashPassword('Laturkhadgaon@pis');
         db.users.push({
             id: db.nextId++,
             username: 'admin',
@@ -87,7 +87,7 @@ async function setupDatabase() {
     console.log('========================================');
     console.log('👤 Admin Login:');
     console.log(`   Username: admin`);
-    console.log(`   Password: admin123`);
+    console.log(`   Password: Laturkhadgaon@pis`);
     console.log('========================================');
     console.log(`👨‍🏫 ${teacherCount} teachers created with password: teacher123`);
     console.log('========================================');

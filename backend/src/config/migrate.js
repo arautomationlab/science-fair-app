@@ -107,7 +107,7 @@ async function migrate() {
 
         const adminCheck = await pool.query("SELECT * FROM users WHERE username = 'admin'");
         if (adminCheck.rows.length === 0) {
-            const adminPassword = await hashPassword('admin123');
+            const adminPassword = await hashPassword('Laturkhadgaon@pis');
             await pool.query(
                 "INSERT INTO users (username, password, full_name, role) VALUES ($1, $2, $3, $4)",
                 ['admin', adminPassword, 'Administrator', 'admin']
@@ -146,7 +146,7 @@ async function migrate() {
         console.log('========================================');
         console.log('👤 Admin Login:');
         console.log('   Username: admin');
-        console.log('   Password: admin123');
+        console.log('   Password: Laturkhadgaon@pis');
         console.log('========================================');
         console.log('👨‍🏫 Teacher Login:');
         console.log('   Username: <teacher username>');

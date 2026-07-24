@@ -207,13 +207,20 @@ const Login = () => {
                 </button>
 
                 {userType === 'student' && (
-                    <p className="text-center text-sm text-gray-600">
+                <div className="mt-4 text-center">
+                    <p className="text-sm text-gray-600">
                         Don't have an account?{' '}
                         <a href="/register" className="text-blue-600 hover:underline">
                             Register here
                         </a>
                     </p>
-                )}
+                    <p className="text-sm text-gray-600 mt-1">
+                        <a href="/reset-password" className="text-blue-600 hover:underline">
+                            🔑 Forgot Password?
+                        </a>
+                    </p>
+                </div>
+            )}
             </form>
         </div>
     );

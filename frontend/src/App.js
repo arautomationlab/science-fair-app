@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 
 // Pages
+import ResetPassword from './pages/ResetPassword';
+// Add this route
+<Route path="/reset-password" element={<ResetPassword />} />
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -69,7 +72,11 @@ function App() {
                 <ProjectSubmit />
               </PrivateRoute>
             } />
-            
+
+            <Route path="/reset-password" element={
+              <ResetPassword />
+              } />
+              
             {/* Teacher Routes */}
             <Route path="/teacher-dashboard" element={
               <RoleRoute allowedRoles={['teacher']}>

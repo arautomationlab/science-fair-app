@@ -8,21 +8,16 @@ const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.o
 const Dashboard = () => {
     const navigate = useNavigate();
     const [group, setGroup] = useState(null);
-    const [loading, setLoading] = useState(true);
     const [projectDetails, setProjectDetails] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                // Get user data from localStorage
                 const storedUser = localStorage.getItem('user');
                 const storedGroup = localStorage.getItem('group');
                 
-                console.log('🔍 Stored user:', storedUser);
-                console.log('🔍 Stored group:', storedGroup);
-                
                 let userData = null;
-                
                 if (storedUser) {
                     userData = JSON.parse(storedUser);
                 } else if (storedGroup) {
@@ -31,12 +26,10 @@ const Dashboard = () => {
                 
                 if (userData) {
                     setGroup(userData);
-                    // If we have registration_code, fetch project details
                     if (userData.registration_code) {
                         await fetchProjectDetails(userData.registration_code);
                     }
                 } else {
-                    // No user data, redirect to login
                     toast.error('Please login again');
                     navigate('/login');
                 }
@@ -62,8 +55,21 @@ const Dashboard = () => {
             }
         } catch (error) {
             console.error('Fetch project details error:', error);
-            // Don't show error toast here - it's okay if project not submitted yet
         }
+    };
+
+    const downloadQRCode = (qrCodeDataUrl, registrationCode) => {
+        if (!qrCodeDataUrl) {
+            toast.error('QR Code not available');
+            return;
+        }
+        const link = document.createElement('a');
+        link.download = `${registrationCode}.png`;
+        link.href = qrCodeDataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('QR Code downloaded!');
     };
 
     const handleLogout = () => {
@@ -101,6 +107,9 @@ const Dashboard = () => {
             </div>
         );
     }
+
+    const students = JSON.parse(group.students_data || '[]');
+    const qrCodeDataUrl = projectDetails?.qr_code || group?.qr_code || null;
 
     return (
         <div className="max-w-4xl mx-auto p-6">
@@ -145,21 +154,67 @@ const Dashboard = () => {
                         <p className={`text-lg font-bold ${group.project_submitted ? 'text-green-600' : 'text-red-600'}`}>
                             {group.project_submitted ? '✅ Submitted' : '❌ Not Submitted Yet'}
                         </p>
-                        {projectDetails && projectDetails.submitted_at && (
-                            <p className="text-xs text-gray-500 mt-1">
-                                Submitted on: {new Date(projectDetails.submitted_at).toLocaleDateString()}
-                            </p>
-                        )}
                     </div>
-                    <div className="bg-indigo-50 p-4 rounded-lg col-span-2">
-                        <p className="text-sm text-gray-600">⭐ Parent Rating</p>
-                        <p className="text-xl font-bold text-indigo-600">
-                            {projectDetails?.average_rating || 0} ⭐ 
-                            <span className="text-sm font-normal text-gray-500 ml-2">
-                                ({projectDetails?.total_ratings || 0} ratings)
-                            </span>
-                        </p>
+                </div>
+
+                {/* ✅ QR CODE SECTION */}
+                {qrCodeDataUrl ? (
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg border-2 border-dashed border-blue-300">
+                        <h3 className="text-lg font-semibold text-gray-700 mb-3 text-center">📱 Your QR Code</h3>
+                        <div className="flex flex-col items-center">
+                            <img 
+                                src={qrCodeDataUrl} 
+                                alt="QR Code" 
+                                className="w-48 h-48 border-2 border-gray-300 rounded-lg shadow-lg"
+                            />
+                            <button
+                                onClick={() => downloadQRCode(qrCodeDataUrl, group.registration_code)}
+                                className="mt-3 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm flex items-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Download QR Code
+                            </button>
+                            <p className="text-xs text-gray-400 mt-2">Scan this QR code on the fair day</p>
+                        </div>
                     </div>
+                ) : (
+                    <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-300 text-center">
+                        <p className="text-yellow-700">📌 QR Code will be available after project submission</p>
+                    </div>
+                )}
+
+                {/* ✅ STUDENT CREDENTIALS */}
+                <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-3">🔑 Your Credentials</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="bg-white p-3 rounded border border-red-200">
+                            <p className="text-xs text-gray-500">Registration Code</p>
+                            <p className="text-lg font-mono font-bold text-blue-600">{group.registration_code}</p>
+                        </div>
+                        <div className="bg-white p-3 rounded border border-red-200">
+                            <p className="text-xs text-gray-500">Password</p>
+                            <p className="text-lg font-mono font-bold text-red-600">{group.password || '********'}</p>
+                        </div>
+                    </div>
+                    <p className="text-xs text-red-500 mt-2">⚠️ Save these credentials securely!</p>
+                </div>
+
+                {/* Students List */}
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-3">👨‍👩‍👧‍👦 Team Members</h3>
+                    {students.length > 0 ? (
+                        students.map((student, idx) => (
+                            <div key={idx} className="flex items-center gap-2 py-1 border-b border-blue-100 last:border-0">
+                                <span className="text-blue-600">👤</span>
+                                <span>{student.firstName || ''} {student.middleName || ''} {student.lastName || ''}</span>
+                                <span className="text-xs text-gray-500 ml-2">Parent: {student.parent_name}</span>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-sm text-gray-500">No team members listed</p>
+                    )}
                 </div>
 
                 <div className="mt-6 flex gap-4 flex-wrap">
@@ -171,8 +226,7 @@ const Dashboard = () => {
                     </button>
                     <button
                         onClick={() => {
-                            const code = group.registration_code || '';
-                            navigator.clipboard.writeText(code);
+                            navigator.clipboard.writeText(group.registration_code || '');
                             toast.success('Group code copied!');
                         }}
                         className="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700"
@@ -181,14 +235,7 @@ const Dashboard = () => {
                     </button>
                     {group.registration_code && (
                         <button
-                            onClick={() => {
-                                const code = group.registration_code || group.registrationCode;
-                                if (code) {
-                                    window.open(`/project/${code}`, '_blank');
-                                } else {
-                                    toast.error('Registration code not found');
-                                }
-                            }}
+                            onClick={() => window.open(`/project/${group.registration_code}`, '_blank')}
                             className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
                         >
                             🔍 View Public Project
