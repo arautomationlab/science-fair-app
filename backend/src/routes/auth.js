@@ -145,6 +145,27 @@ setTimeout(async () => {
 
 }, 100);
 
+// Debug route - Add this to server.js
+app.get('/api/debug', (req, res) => {
+    res.json({
+        status: 'OK',
+        message: 'Server is running!',
+        timestamp: new Date().toISOString(),
+        env: process.env.NODE_ENV || 'development'
+    });
+});
+
+// List all registered routes (for debugging)
+app.get('/api/routes', (req, res) => {
+    const routes = [];
+    app._router.stack.forEach(layer => {
+        if (layer.route) {
+            const methods = Object.keys(layer.route.methods).join(', ');
+            routes.push(`${methods.toUpperCase()} ${layer.route.path}`);
+        }
+    });
+    res.json({ routes });
+});
 
         // ✅ Send response IMMEDIATELY
         res.json({
@@ -425,6 +446,133 @@ router.post('/reset-admin-password', async (req, res) => {
         res.status(500).json({ 
             success: false, 
             message: 'Failed to reset password: ' + error.message 
+        });
+    }
+});
+// ==================== VERIFY STUDENT ====================
+router.post('/verify-student', [
+    body('registration_code').notEmpty(),
+    body('parent_email').isEmail()
+], async (req, res) => {
+    try {
+        const { registration_code, parent_email } = req.body;
+
+        const result = await pool.query(
+            'SELECT id, students_data FROM groups WHERE registration_code = $1',
+            [registration_code.toUpperCase()]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Registration code not found'
+            });
+        }
+
+        const group = result.rows[0];
+        const students = JSON.parse(group.students_data || '[]');
+
+        const emailMatch = students.some(s => 
+            s.parent_email && s.parent_email.toLowerCase() === parent_email.toLowerCase()
+        );
+
+        if (!emailMatch) {
+            return res.status(403).json({
+                success: false,
+                message: 'Parent email does not match this registration'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Verification successful'
+        });
+
+    } catch (error) {
+        console.error('Verify Student Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to verify student'
+        });
+    }
+});
+
+// ==================== RESET PASSWORD ====================
+router.post('/reset-password', [
+    body('registration_code').notEmpty(),
+    body('parent_email').isEmail(),
+    body('new_password').isLength({ min: 6 })
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array()
+            });
+        }
+
+        const { registration_code, parent_email, new_password } = req.body;
+
+        // ✅ Find the group
+        const result = await pool.query(
+            'SELECT id, students_data FROM groups WHERE registration_code = $1',
+            [registration_code.toUpperCase()]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Registration code not found'
+            });
+        }
+
+        const group = result.rows[0];
+        const students = JSON.parse(group.students_data || '[]');
+
+        // ✅ Check if parent email matches any student
+        const emailMatch = students.some(s => 
+            s.parent_email && s.parent_email.toLowerCase() === parent_email.toLowerCase()
+        );
+
+        if (!emailMatch) {
+            return res.status(403).json({
+                success: false,
+                message: 'Parent email does not match this registration'
+            });
+        }
+
+        // ✅ Hash the new password
+        const hashedPassword = await bcrypt.hash(new_password, 10);
+
+        // ✅ Update password
+        await pool.query(
+            'UPDATE groups SET password = $1 WHERE id = $2',
+            [hashedPassword, group.id]
+        );
+
+        // ✅ Also update plain_password if column exists
+        try {
+            await pool.query(
+                'UPDATE groups SET plain_password = $1 WHERE id = $2',
+                [new_password, group.id]
+            );
+        } catch (err) {
+            // Column might not exist, ignore
+        }
+
+        console.log(`✅ Password reset for: ${registration_code}`);
+
+        res.json({
+            success: true,
+            message: 'Password reset successfully! Please login with your new password.'
+        });
+
+    } catch (error) {
+        console.error('Reset Password Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to reset password: ' + error.message
         });
     }
 });
