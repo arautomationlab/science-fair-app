@@ -21,6 +21,10 @@ const AdminDashboard = () => {
     });
     const [showExportModal, setShowExportModal] = useState(false);
     const [showRegistrations, setShowRegistrations] = useState(false);
+    
+    // ✅ Student Details Modal States
+    const [selectedProject, setSelectedProject] = useState(null);
+    const [showStudentDetails, setShowStudentDetails] = useState(false);
 
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem('user'));
@@ -113,6 +117,12 @@ const AdminDashboard = () => {
         const lastName = student.lastName || '';
         const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
         return fullName || student.name || 'Unknown';
+    };
+
+    // ✅ View Student Details
+    const viewStudentDetails = (project) => {
+        setSelectedProject(project);
+        setShowStudentDetails(true);
     };
 
     // ✅ Export Registrations to Excel
@@ -360,7 +370,7 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* ✅ NEW: Registration Summary Section */}
+            {/* Registration Summary Section */}
             <div className="bg-white rounded-lg shadow-lg p-4 mb-6 border-l-4 border-blue-500">
                 <div className="flex justify-between items-center">
                     <div>
@@ -375,7 +385,6 @@ const AdminDashboard = () => {
                     </button>
                 </div>
                 
-                {/* Quick Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
                     <div className="bg-blue-50 p-2 rounded">
                         <p className="text-xs text-gray-500">Total Students</p>
@@ -483,115 +492,123 @@ const AdminDashboard = () => {
             </div>
 
             {/* All Projects Table */}
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teacher</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Students</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+<div className="bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+                <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teacher</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Students</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+                {filteredProjects.length === 0 ? (
+                    <tr>
+                        <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
+                            No projects found matching your filters.
+                        </td>
+                    </tr>
+                ) : (
+                    filteredProjects.map((project, index) => {
+                        let students = [];
+                        try {
+                            if (typeof project.students_data === 'string') {
+                                students = JSON.parse(project.students_data || '[]');
+                            } else if (Array.isArray(project.students_data)) {
+                                students = project.students_data;
+                            } else if (project.students_data && typeof project.students_data === 'object') {
+                                students = Object.values(project.students_data);
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse students_data:', e);
+                            students = [];
+                        }
+
+                        const studentNames = students.map(s => {
+                            const firstName = s.firstName || '';
+                            const middleName = s.middleName || '';
+                            const lastName = s.lastName || '';
+                            const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+                            return fullName || s.name || 'Unknown';
+                        }).join(', ');
+
+                        return (
+                            <tr key={project.id} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
+                                <td className="px-4 py-3">
+                                    {/* ✅ Project Name */}
+                                    <div className="font-medium">{project.team_name || 'N/A'}</div>
+                                    <div className="text-sm text-gray-500">{project.project_title || 'N/A'}</div>
+                                    {/* ✅ Details Button - Small font below project name */}
+                                    <button
+                                        onClick={() => viewStudentDetails(project)}
+                                        className="text-xs text-purple-500 hover:text-purple-700 mt-1 flex items-center gap-1"
+                                    >
+                                        <span>👤</span> View Student Details
+                                    </button>
+                                </td>
+                                <td className="px-4 py-3">{project.grade || 'N/A'} - {project.division || 'N/A'}</td>
+                                <td className="px-4 py-3 text-sm">{project.teacher_guide || project.teacher_name || 'N/A'}</td>
+                                <td className="px-4 py-3 text-sm">
+                                    {studentNames || 'No students'}
+                                </td>
+                                <td className="px-4 py-3">
+                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                        project.project_submitted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                        {project.project_submitted ? '✅ Submitted' : '⏳ Pending'}
+                                    </span>
+                                    <br />
+                                    <span className="text-xs text-gray-500">
+                                        {project.judge_count || 0}/2 judges
+                                    </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                    {project.average_score ? (
+                                        <span className="font-bold text-blue-600">
+                                            {Math.round(project.average_score)}%
+                                        </span>
+                                    ) : (
+                                        <span className="text-gray-400 text-sm">Not yet</span>
+                                    )}
+                                </td>
+                                <td className="px-4 py-3">
+                                    <button
+                                        onClick={() => navigate(`/project/${project.registration_code}`)}
+                                        className="text-blue-600 hover:text-blue-900 text-sm mr-2"
+                                    >
+                                        View
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(project.registration_code || '');
+                                            toast.success('Code copied!');
+                                        }}
+                                        className="text-gray-600 hover:text-gray-900 text-sm mr-2"
+                                    >
+                                        Copy
+                                    </button>
+                                    <button
+                                        onClick={() => deleteProject(project.id, project.team_name)}
+                                        className="text-red-600 hover:text-red-900 text-sm"
+                                    >
+                                        🗑️ Delete
+                                    </button>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {filteredProjects.length === 0 ? (
-                                <tr>
-                                    <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
-                                        No projects found matching your filters.
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredProjects.map((project, index) => {
-                                    let students = [];
-                                    try {
-                                        if (typeof project.students_data === 'string') {
-                                            students = JSON.parse(project.students_data || '[]');
-                                        } else if (Array.isArray(project.students_data)) {
-                                            students = project.students_data;
-                                        } else if (project.students_data && typeof project.students_data === 'object') {
-                                            students = Object.values(project.students_data);
-                                        }
-                                    } catch (e) {
-                                        console.error('Failed to parse students_data:', e);
-                                        students = [];
-                                    }
-
-                                    const studentNames = students.map(s => {
-                                        const firstName = s.firstName || '';
-                                        const middleName = s.middleName || '';
-                                        const lastName = s.lastName || '';
-                                        const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
-                                        return fullName || s.name || 'Unknown';
-                                    }).join(', ');
-
-                                    return (
-                                        <tr key={project.id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
-                                            <td className="px-4 py-3">
-                                                <div className="font-medium">{project.team_name || 'N/A'}</div>
-                                                <div className="text-sm text-gray-500">{project.project_title || 'N/A'}</div>
-                                            </td>
-                                            <td className="px-4 py-3">{project.grade || 'N/A'} - {project.division || 'N/A'}</td>
-                                            <td className="px-4 py-3 text-sm">{project.teacher_guide || project.teacher_name || 'N/A'}</td>
-                                            <td className="px-4 py-3 text-sm">
-                                                {studentNames || 'No students'}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                                    project.project_submitted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                                }`}>
-                                                    {project.project_submitted ? '✅ Submitted' : '⏳ Pending'}
-                                                </span>
-                                                <br />
-                                                <span className="text-xs text-gray-500">
-                                                    {project.judge_count || 0}/2 judges
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                {project.average_score ? (
-                                                    <span className="font-bold text-blue-600">
-                                                        {Math.round(project.average_score)}%
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-gray-400 text-sm">Not yet</span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <button
-                                                    onClick={() => navigate(`/project/${project.registration_code}`)}
-                                                    className="text-blue-600 hover:text-blue-900 text-sm mr-2"
-                                                >
-                                                    View
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(project.registration_code || '');
-                                                        toast.success('Code copied!');
-                                                    }}
-                                                    className="text-gray-600 hover:text-gray-900 text-sm mr-2"
-                                                >
-                                                    Copy
-                                                </button>
-                                                <button
-                                                    onClick={() => deleteProject(project.id, project.team_name)}
-                                                    className="text-red-600 hover:text-red-900 text-sm"
-                                                >
-                                                    🗑️ Delete
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                        );
+                    })
+                )}
+            </tbody>
+        </table>
+    </div>
+</div>
 
             {/* Teachers List */}
             <div className="mt-6 bg-white rounded-lg shadow-lg overflow-hidden">
@@ -641,6 +658,122 @@ const AdminDashboard = () => {
                             >
                                 Cancel
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ✅ Student Details Modal */}
+            {showStudentDetails && selectedProject && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-gray-800">
+                                👨‍👩‍👧‍👦 {selectedProject.team_name}
+                            </h3>
+                            <button
+                                onClick={() => setShowStudentDetails(false)}
+                                className="text-gray-500 hover:text-gray-700 text-2xl"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            {/* Project Info */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-blue-50 p-3 rounded">
+                                    <p className="text-xs text-gray-500">Project Title</p>
+                                    <p className="font-medium">{selectedProject.project_title}</p>
+                                </div>
+                                <div className="bg-green-50 p-3 rounded">
+                                    <p className="text-xs text-gray-500">Grade</p>
+                                    <p className="font-medium">{selectedProject.grade} - {selectedProject.division}</p>
+                                </div>
+                                <div className="bg-purple-50 p-3 rounded col-span-2">
+                                    <p className="text-xs text-gray-500">Registration Code</p>
+                                    <p className="font-mono font-bold text-blue-600">{selectedProject.registration_code}</p>
+                                </div>
+                            </div>
+                            
+                            {/* Students List */}
+                            <div className="border-t pt-4">
+                                <h4 className="font-semibold text-gray-700 mb-2">📋 Students</h4>
+                                {(() => {
+                                    let students = [];
+                                    try {
+                                        if (typeof selectedProject.students_data === 'string') {
+                                            students = JSON.parse(selectedProject.students_data || '[]');
+                                        } else if (Array.isArray(selectedProject.students_data)) {
+                                            students = selectedProject.students_data;
+                                        }
+                                    } catch (e) {
+                                        students = [];
+                                    }
+                                    return students.length > 0 ? (
+                                        students.map((student, idx) => (
+                                            <div key={idx} className="bg-gray-50 p-3 rounded mb-2 border">
+                                                <p className="font-medium">
+                                                    {student.firstName || ''} {student.middleName || ''} {student.lastName || ''}
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                    👨‍👩 Parent: {student.parent_name} | 📱 {student.parent_phone}
+                                                </p>
+                                                {student.parent_email && (
+                                                    <p className="text-sm text-gray-600">📧 {student.parent_email}</p>
+                                                )}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-gray-500">No students found</p>
+                                    );
+                                })()}
+                            </div>
+                            
+                            {/* QR Code */}
+                            <div className="border-t pt-4">
+                                <h4 className="font-semibold text-gray-700 mb-2">📱 QR Code</h4>
+                                {selectedProject.qr_code ? (
+                                    <div className="flex flex-col items-center">
+                                        <img 
+                                            src={selectedProject.qr_code} 
+                                            alt="QR Code" 
+                                            className="w-32 h-32 border border-gray-300 rounded-lg"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                const link = document.createElement('a');
+                                                link.download = `${selectedProject.registration_code}.png`;
+                                                link.href = selectedProject.qr_code;
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                document.body.removeChild(link);
+                                                toast.success('QR Code downloaded!');
+                                            }}
+                                            className="mt-2 bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600"
+                                        >
+                                            Download QR
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-500 text-sm">QR Code not available</p>
+                                )}
+                            </div>
+                            
+                            {/* Credentials */}
+                            <div className="border-t pt-4">
+                                <h4 className="font-semibold text-gray-700 mb-2">🔑 Credentials</h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="bg-blue-50 p-2 rounded">
+                                        <p className="text-xs text-gray-500">Registration Code</p>
+                                        <p className="font-mono font-bold text-blue-600">{selectedProject.registration_code}</p>
+                                    </div>
+                                    <div className="bg-red-50 p-2 rounded">
+                                        <p className="text-xs text-gray-500">Password</p>
+                                        <p className="font-mono font-bold text-red-600">{selectedProject.password || '********'}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
