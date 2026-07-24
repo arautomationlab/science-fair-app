@@ -108,7 +108,14 @@ const Dashboard = () => {
         );
     }
 
-    const students = JSON.parse(group.students_data || '[]');
+    // ✅ Fixed code - handles both string and object
+let students = group.students_data;
+if (typeof students === 'string') {
+    students = JSON.parse(students);
+}
+if (!students || !Array.isArray(students)) {
+    students = [];
+}
     const qrCodeDataUrl = projectDetails?.qr_code || group?.qr_code || null;
 
     return (
