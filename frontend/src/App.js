@@ -3,9 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 
 // Pages
-import ResetPassword from './pages/ResetPassword';
-// Add this route
-<Route path="/reset-password" element={<ResetPassword />} />
 import Register from './pages/Register';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -14,7 +11,8 @@ import ProjectSubmit from './pages/ProjectSubmit';
 import JudgePanel from './pages/JudgePanel';
 import AdminDashboard from './pages/AdminDashboard';
 import Winners from './pages/Winners';
-import PublicProject from './pages/PublicProject'; // ✅ Make sure this is imported
+import PublicProject from './pages/PublicProject';
+import ResetPassword from './pages/ResetPassword';
 
 // Components
 import Navbar from './components/Navbar';
@@ -53,8 +51,9 @@ function App() {
             
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             
-            {/* ✅ Public Project Page - No Login Required */}
+            {/* Public Project Page - No Login Required */}
             <Route path="/project/:code" element={<PublicProject />} />
             
             {/* Judge Panel - accessed via QR code */}
@@ -72,11 +71,7 @@ function App() {
                 <ProjectSubmit />
               </PrivateRoute>
             } />
-
-            <Route path="/reset-password" element={
-              <ResetPassword />
-              } />
-              
+            
             {/* Teacher Routes */}
             <Route path="/teacher-dashboard" element={
               <RoleRoute allowedRoles={['teacher']}>
