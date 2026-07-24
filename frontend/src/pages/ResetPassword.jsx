@@ -31,7 +31,6 @@ const ResetPassword = () => {
         setLoading(true);
 
         try {
-            // ✅ Check if the registration exists and email matches
             const response = await axios.post(`${API_URL}/api/auth/verify-student`, {
                 registration_code: formData.registration_code,
                 parent_email: formData.parent_email
