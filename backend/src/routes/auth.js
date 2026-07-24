@@ -457,12 +457,17 @@ router.post('/verify-student', [
     try {
         const { registration_code, parent_email } = req.body;
 
+        console.log('🔍 Verification attempt:');
+        console.log('   Code:', registration_code);
+        console.log('   Email:', parent_email);
+
         const result = await pool.query(
             'SELECT id, students_data FROM groups WHERE registration_code = $1',
             [registration_code.toUpperCase()]
         );
 
         if (result.rows.length === 0) {
+            console.log('❌ Registration code not found:', registration_code);
             return res.status(404).json({
                 success: false,
                 message: 'Registration code not found'
@@ -470,32 +475,50 @@ router.post('/verify-student', [
         }
 
         const group = result.rows[0];
-        const students = JSON.parse(group.students_data || '[]');
+        
+        // ✅ FIX: students_data is already an object, don't parse it!
+        let students = group.students_data;
+        
+        // If it's a string (just in case), parse it
+        if (typeof students === 'string') {
+            students = JSON.parse(students);
+        }
+        
+        // If it's null or undefined, use empty array
+        if (!students || !Array.isArray(students)) {
+            students = [];
+        }
+
+        console.log('👥 Students in group:', students.length);
+        console.log('📧 Emails in group:', students.map(s => s.parent_email));
 
         const emailMatch = students.some(s => 
             s.parent_email && s.parent_email.toLowerCase() === parent_email.toLowerCase()
         );
 
         if (!emailMatch) {
+            console.log('❌ Email not found in this group:', parent_email);
             return res.status(403).json({
                 success: false,
                 message: 'Parent email does not match this registration'
             });
         }
 
+        console.log('✅ Verification successful!');
         res.json({
             success: true,
             message: 'Verification successful'
         });
 
     } catch (error) {
-        console.error('Verify Student Error:', error);
+        console.error('❌ Verify Student Error:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to verify student'
+            message: 'Failed to verify student: ' + error.message
         });
     }
 });
+
 
 // ==================== RESET PASSWORD ====================
 router.post('/reset-password', [
@@ -514,7 +537,11 @@ router.post('/reset-password', [
 
         const { registration_code, parent_email, new_password } = req.body;
 
-        // ✅ Find the group
+        console.log('🔑 Password reset attempt:');
+        console.log('   Code:', registration_code);
+        console.log('   Email:', parent_email);
+
+        // Find the group
         const result = await pool.query(
             'SELECT id, students_data FROM groups WHERE registration_code = $1',
             [registration_code.toUpperCase()]
@@ -528,9 +555,17 @@ router.post('/reset-password', [
         }
 
         const group = result.rows[0];
-        const students = JSON.parse(group.students_data || '[]');
+        
+        // ✅ FIX: students_data is already an object
+        let students = group.students_data;
+        if (typeof students === 'string') {
+            students = JSON.parse(students);
+        }
+        if (!students || !Array.isArray(students)) {
+            students = [];
+        }
 
-        // ✅ Check if parent email matches any student
+        // Check if parent email matches any student
         const emailMatch = students.some(s => 
             s.parent_email && s.parent_email.toLowerCase() === parent_email.toLowerCase()
         );
@@ -542,24 +577,14 @@ router.post('/reset-password', [
             });
         }
 
-        // ✅ Hash the new password
+        // Hash the new password
         const hashedPassword = await bcrypt.hash(new_password, 10);
 
-        // ✅ Update password
+        // Update password
         await pool.query(
             'UPDATE groups SET password = $1 WHERE id = $2',
             [hashedPassword, group.id]
         );
-
-        // ✅ Also update plain_password if column exists
-        try {
-            await pool.query(
-                'UPDATE groups SET plain_password = $1 WHERE id = $2',
-                [new_password, group.id]
-            );
-        } catch (err) {
-            // Column might not exist, ignore
-        }
 
         console.log(`✅ Password reset for: ${registration_code}`);
 
