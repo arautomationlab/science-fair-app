@@ -74,98 +74,52 @@ router.post('/register', [
         console.log(`📱 QR Code URL: ${qrData}`);
 
         // ✅ Send email in BACKGROUND (non-blocking)
-        // Send email confirmation (non-blocking)
-// ================= EMAIL SENDING =================
-
-// Send confirmation email to ALL parent email addresses
-setTimeout(async () => {
-
-    try {
-
-        const emailService = require("../services/emailService");
-
-        for (const student of students) {
-
-            const studentName =
-                `${student.firstName || ""} ${student.lastName || ""}`.trim() || "Student";
-
-            console.log("======================================");
-            console.log("📧 Parent Email :", student.parent_email || "(No Email)");
-            console.log("👦 Student Name :", studentName);
-            console.log("🔑 Registration :", registrationCode);
-            console.log("======================================");
-
-            if (
-                student.parent_email &&
-                student.parent_email.trim() !== ""
-            ) {
-
-                const emailResult = await emailService.sendRegistrationEmail(
-                    student.parent_email.trim(),
-                    studentName,
-                    student.parent_name,
-                    registrationCode,
-                    password,
-                    team_name,
-                    project_title,
-                    grade,
-                    division,
-                    qrCodeDataUrl
-                );
-
-                if (emailResult.success) {
-
+        setTimeout(async () => {
+            try {
+                const emailService = require("../services/emailService");
+                for (const student of students) {
+                    const studentName = `${student.firstName || ""} ${student.lastName || ""}`.trim() || "Student";
                     console.log("======================================");
-                    console.log("✅ EMAIL SENT SUCCESSFULLY");
-                    console.log("📧 To :", student.parent_email);
-                    console.log("📨 Message ID :", emailResult.messageId);
+                    console.log("📧 Parent Email :", student.parent_email || "(No Email)");
+                    console.log("👦 Student Name :", studentName);
+                    console.log("🔑 Registration :", registrationCode);
                     console.log("======================================");
 
-                } else {
+                    if (student.parent_email && student.parent_email.trim() !== "") {
+                        const emailResult = await emailService.sendRegistrationEmail(
+                            student.parent_email.trim(),
+                            studentName,
+                            student.parent_name,
+                            registrationCode,
+                            password,
+                            team_name,
+                            project_title,
+                            grade,
+                            division,
+                            qrCodeDataUrl
+                        );
 
-                    console.log("======================================");
-                    console.log("❌ EMAIL FAILED");
-                    console.log(emailResult.error);
-                    console.log("======================================");
-
+                        if (emailResult.success) {
+                            console.log("======================================");
+                            console.log("✅ EMAIL SENT SUCCESSFULLY");
+                            console.log("📧 To :", student.parent_email);
+                            console.log("📨 Message ID :", emailResult.messageId);
+                            console.log("======================================");
+                        } else {
+                            console.log("======================================");
+                            console.log("❌ EMAIL FAILED");
+                            console.log(emailResult.error);
+                            console.log("======================================");
+                        }
+                    }
                 }
-
+            } catch (err) {
+                console.error("======================================");
+                console.error("❌ EMAIL EXCEPTION");
+                console.error(err);
+                console.error("======================================");
             }
-
-        }
-
-    } catch (err) {
-
-        console.error("======================================");
-        console.error("❌ EMAIL EXCEPTION");
-        console.error(err);
-        console.error("======================================");
-
-    }
-
-}, 100);
-
-// Debug route - Add this to server.js
-app.get('/api/debug', (req, res) => {
-    res.json({
-        status: 'OK',
-        message: 'Server is running!',
-        timestamp: new Date().toISOString(),
-        env: process.env.NODE_ENV || 'development'
-    });
-});
-
-// List all registered routes (for debugging)
-app.get('/api/routes', (req, res) => {
-    const routes = [];
-    app._router.stack.forEach(layer => {
-        if (layer.route) {
-            const methods = Object.keys(layer.route.methods).join(', ');
-            routes.push(`${methods.toUpperCase()} ${layer.route.path}`);
-        }
-    });
-    res.json({ routes });
-});
+        }, 100);
 
         // ✅ Send response IMMEDIATELY
         res.json({
@@ -396,12 +350,10 @@ router.post('/login/admin', [
     }
 });
 
-// ✅ RESET ADMIN PASSWORD (Use once, then remove or protect)
+// ✅ RESET ADMIN PASSWORD
 router.post('/reset-admin-password', async (req, res) => {
     try {
         const { secretKey, newPassword } = req.body;
-        
-        // Secret key for security - change this to something random
         const SECRET_KEY = 'PODAR_RESET_2026';
         
         if (secretKey !== SECRET_KEY) {
@@ -449,6 +401,7 @@ router.post('/reset-admin-password', async (req, res) => {
         });
     }
 });
+
 // ==================== VERIFY STUDENT ====================
 router.post('/verify-student', [
     body('registration_code').notEmpty(),
@@ -478,13 +431,9 @@ router.post('/verify-student', [
         
         // ✅ FIX: students_data is already an object, don't parse it!
         let students = group.students_data;
-        
-        // If it's a string (just in case), parse it
         if (typeof students === 'string') {
             students = JSON.parse(students);
         }
-        
-        // If it's null or undefined, use empty array
         if (!students || !Array.isArray(students)) {
             students = [];
         }
@@ -518,7 +467,6 @@ router.post('/verify-student', [
         });
     }
 });
-
 
 // ==================== RESET PASSWORD ====================
 router.post('/reset-password', [
@@ -601,4 +549,5 @@ router.post('/reset-password', [
         });
     }
 });
+
 module.exports = router;

@@ -3,6 +3,7 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { upload } = require('../config/cloudinary');
+const QRCode = require('qrcode');
 
 // ✅ PUBLIC PROJECT VIEW
 router.get('/public/:code', async (req, res) => {
@@ -171,10 +172,26 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
             [groupId]
         );
 
+        // ✅ GENERATE QR CODE AFTER SUBMISSION
+        const frontendUrl = process.env.APP_URL || 'https://science-fair-app.vercel.app';
+        const qrData = `${frontendUrl}/project/${registration_code}`;
+        const qrCodeDataUrl = await QRCode.toDataURL(qrData);
+
+        // ✅ SAVE QR CODE TO DATABASE
+        await pool.query(
+            'UPDATE groups SET qr_code = $1 WHERE id = $2',
+            [qrCodeDataUrl, groupId]
+        );
+
+        console.log(`✅ QR Code generated for: ${registration_code}`);
+
         res.json({
             success: true,
-            message: 'Project submitted successfully!',
-            data: result.rows[0],
+            message: 'Project submitted successfully! 🎉',
+            data: {
+                ...result.rows[0],
+                qr_code: qrCodeDataUrl
+            },
             images: imageUrls
         });
 
