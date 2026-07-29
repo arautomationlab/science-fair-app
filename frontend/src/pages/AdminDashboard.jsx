@@ -581,28 +581,20 @@ const AdminDashboard = () => {
                                                     {project.judge_count || 0}/2 judges
                                                 </span>
                                             </td>
-                                            {/* ✅ SCORE COLUMN - CLICKABLE SCORE */}
+                                            {/* ✅ SCORE COLUMN - Shows average score with judge count */}
                                             <td className="px-4 py-3">
                                                 {project.average_score ? (
-                                                    <button
-                                                        onClick={() => viewJudgeScores(project)}
-                                                        className="font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-center w-full transition-colors duration-200 group relative"
-                                                        title="Click to view judge details"
-                                                    >
-                                                        <span className="text-lg">
+                                                    <div className="text-center">
+                                                        <span className="font-bold text-lg text-blue-600">
                                                             {Math.round(project.average_score)}%
                                                         </span>
                                                         <br />
-                                                        <span className="text-xs text-gray-400 font-normal">
+                                                        <span className="text-xs text-gray-400">
                                                             {project.judge_count || 0} judge(s)
                                                         </span>
-                                                        {/* Tooltip */}
-                                                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                                            Click to view judge details
-                                                        </span>
-                                                    </button>
+                                                    </div>
                                                 ) : (
-                                                    <span className="text-gray-400 text-sm">Not yet</span>
+                                                    <span className="text-gray-400 text-sm">—</span>
                                                 )}
                                             </td>
                                             <td className="px-4 py-3">
@@ -612,7 +604,8 @@ const AdminDashboard = () => {
                                                 >
                                                     View
                                                 </button>
-                                                {/* ✅ Scores Button - Opens judge scores modal */}
+                                                {/* ❌ REMOVED: Copy button - registration code is already visible in View Student Details */}
+                                                {/* ✅ View Scores Button */}
                                                 <button
                                                     onClick={() => viewJudgeScores(project)}
                                                     className="text-green-600 hover:text-green-900 text-sm mr-2"
