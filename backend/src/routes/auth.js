@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { pool } = require('../config/database');
 const QRCode = require('qrcode');
+const { isRegistrationLocked, logTeacherOverride, getSetting } = require('../utils/settings'); // ✅ ADD THIS LINE
+
 
 // Generate Unique Code
 function generateCode(grade) {
@@ -585,4 +587,29 @@ router.post('/reset-password', [
     }
 });
 
-module.exports = router;
+// ==================== REGISTRATION STATUS ====================
+router.get('/registration-status', async (req, res) => {
+    try {
+        const locked = await isRegistrationLocked();
+        const lockDateTime = await getSetting('registration_lock_datetime');
+        
+        res.json({
+            success: true,
+            data: {
+                locked: locked,
+                lock_datetime: lockDateTime || '2026-07-29 20:00:00',
+                message: locked 
+                    ? 'Registrations are now closed. Thank you for participating!'
+                    : 'Registrations are open!'
+            }
+        });
+    } catch (error) {
+        console.error('Registration Status Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get registration status'
+        });
+    }
+});
+
+module.exports = router; // ← Make sure this is at the end
