@@ -22,7 +22,8 @@ router.post('/register', [
     body('project_title').notEmpty().trim(),
     body('abstract').optional().trim(),
     body('participants').isInt({ min: 1, max: 4 }),
-    body('students').isArray()
+    body('students').isArray(),
+    body('teacher_override').optional().isBoolean()  // ✅ ADD THIS LINE
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -35,8 +36,32 @@ router.post('/register', [
 
         const { 
             grade, division, teacher_guide, team_name, project_title, abstract,
-            participants, students
+            participants, students,
+            teacher_override = false // ✅ ADD THIS LINE
         } = req.body;
+
+        // ✅ ADD THIS LOCK CHECK
+        const locked = await isRegistrationLocked();
+
+        if (locked && !teacher_override) {
+            return res.status(403).json({
+                success: false,
+                message: '⚠️ Registrations are now closed for Spark 4.0 Science Fair.',
+                locked: true
+            });
+        }
+
+        // ✅ LOG TEACHER OVERRIDE
+        if (teacher_override) {
+            const teacherUsername = req.user?.username || 'teacher';
+            await logTeacherOverride(
+                teacherUsername,
+                'PENDING',
+                students.map(s => `${s.firstName} ${s.lastName}`).join(', '),
+                'Urgent registration after lock'
+            );
+            console.log(`🔓 Teacher override used by: ${teacherUsername}`);
+        }
 
         // Find teacher user
         const teacherResult = await pool.query(
@@ -62,7 +87,17 @@ router.post('/register', [
             [registrationCode, hashedPassword, grade, division, teacher_guide, teacherId,
              team_name, project_title, abstract || '', participants, studentsJson]
         );
-
+        // After the INSERT query, add:
+        if (teacher_override) {
+            const teacherUsername = req.user?.username || 'teacher';
+            await pool.query(
+                `UPDATE teacher_overrides 
+                SET registration_code = $1 
+                WHERE teacher_username = $2 AND registration_code = 'PENDING'
+                ORDER BY created_at DESC LIMIT 1`,
+                [registrationCode, teacherUsername]
+            );
+        }
         const groupId = result.rows[0].id;
 
         // Generate QR Code

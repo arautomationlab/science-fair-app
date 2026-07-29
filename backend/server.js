@@ -22,6 +22,7 @@ const ratingRoutes = require('./src/routes/ratings');
 const adminRoutes = require('./src/routes/admin');
 const teacherRoutes = require('./src/routes/teacher');
 const otpRoutes = require('./src/routes/otp');
+const adminSettingsRoutes = require('./src/routes/admin-settings');
 
 // Use Routes
 app.use('/api/auth', authRoutes);
@@ -31,6 +32,7 @@ app.use('/api/ratings', ratingRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/teacher', teacherRoutes);
 app.use('/api/otp', otpRoutes);
+app.use('/api/admin', adminSettingsRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {
