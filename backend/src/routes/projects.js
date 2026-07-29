@@ -5,7 +5,7 @@ const { authenticate } = require('../middleware/auth');
 const { upload } = require('../config/cloudinary');
 const QRCode = require('qrcode');
 
-// ✅ PUBLIC PROJECT VIEW
+// ✅ PUBLIC PROJECT VIEW - HIDE JUDGE SCORES
 router.get('/public/:code', async (req, res) => {
     try {
         const { code } = req.params;
@@ -20,8 +20,14 @@ router.get('/public/:code', async (req, res) => {
                 pd.abstract as project_abstract, pd.video_link, pd.images,
                 (SELECT ROUND(AVG(stars)::numeric, 1) FROM parent_ratings WHERE group_id = g.id) as average_rating,
                 (SELECT COUNT(*) FROM parent_ratings WHERE group_id = g.id) as total_ratings,
-                (SELECT json_agg(json_build_object('judge_name', judge_name, 'score', score)) 
-                 FROM judge_scores WHERE group_id = g.id) as judge_scores
+                -- ✅ FIX: Only send a boolean, NOT the actual scores
+                CASE 
+                    WHEN EXISTS (SELECT 1 FROM judge_scores WHERE group_id = g.id) 
+                    THEN true 
+                    ELSE false 
+                END as has_judge_scores,
+                -- Also send judge count (optional, for display purposes)
+                (SELECT COUNT(*) FROM judge_scores WHERE group_id = g.id) as judge_count
             FROM groups g
             LEFT JOIN project_details pd ON g.id = pd.group_id
             WHERE g.registration_code ILIKE $1`,
@@ -29,6 +35,11 @@ router.get('/public/:code', async (req, res) => {
         );
 
         console.log('🔍 Found rows:', result.rows.length);
+        
+        if (result.rows.length > 0) {
+            console.log('📊 has_judge_scores:', result.rows[0].has_judge_scores);
+            console.log('📊 judge_count:', result.rows[0].judge_count);
+        }
 
         if (result.rows.length === 0) {
             return res.status(404).json({
