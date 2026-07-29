@@ -3,6 +3,78 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { authenticateAdmin } = require('../middleware/auth');
 
+// ==================== ADMIN DASHBOARD ====================
+// ✅ ADD THIS ROUTE
+router.get('/dashboard', authenticateAdmin, async (req, res) => {
+    try {
+        console.log('📊 Admin dashboard requested');
+
+        const result = await pool.query(
+            `SELECT 
+                g.id,
+                g.registration_code,
+                g.team_name,
+                g.project_title,
+                g.grade,
+                g.division,
+                g.teacher_guide,
+                g.students_data,
+                g.project_submitted,
+                g.created_at,
+                g.qr_code,
+                g.password,
+                (
+                    SELECT COUNT(*) 
+                    FROM judge_scores js 
+                    WHERE js.group_id = g.id
+                ) as judge_count,
+                (
+                    SELECT ROUND(AVG(js.score)::numeric, 1)
+                    FROM judge_scores js 
+                    WHERE js.group_id = g.id
+                ) as average_score,
+                (
+                    SELECT json_agg(
+                        json_build_object(
+                            'judge_name', js.judge_name,
+                            'score', js.score,
+                            'criteria', js.criteria,
+                            'created_at', js.created_at
+                        )
+                    ) 
+                    FROM judge_scores js 
+                    WHERE js.group_id = g.id
+                ) as judge_scores,
+                (
+                    SELECT COUNT(*) 
+                    FROM parent_ratings pr 
+                    WHERE pr.group_id = g.id
+                ) as rating_count,
+                (
+                    SELECT ROUND(AVG(pr.stars)::numeric, 1)
+                    FROM parent_ratings pr 
+                    WHERE pr.group_id = g.id
+                ) as parent_rating
+            FROM groups g
+            ORDER BY g.created_at DESC
+        `);
+
+        console.log(`✅ Found ${result.rows.length} projects`);
+
+        res.json({
+            success: true,
+            data: result.rows
+        });
+
+    } catch (error) {
+        console.error('Admin Dashboard Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to load admin dashboard: ' + error.message
+        });
+    }
+});
+
 // Get All Projects (Admin)
 router.get('/all-projects', authenticateAdmin, async (req, res) => {
     try {
@@ -106,25 +178,15 @@ router.delete('/project/:id', authenticateAdmin, async (req, res) => {
         const { id } = req.params;
         console.log('🗑️ Admin deleting project with ID:', id);
 
-        // Start a transaction to delete all related data
         const client = await pool.connect();
         
         try {
             await client.query('BEGIN');
 
-            // 1. Delete parent ratings
             await client.query('DELETE FROM parent_ratings WHERE group_id = $1', [id]);
-            console.log('✅ Deleted parent ratings');
-
-            // 2. Delete judge scores
             await client.query('DELETE FROM judge_scores WHERE group_id = $1', [id]);
-            console.log('✅ Deleted judge scores');
-
-            // 3. Delete project details
             await client.query('DELETE FROM project_details WHERE group_id = $1', [id]);
-            console.log('✅ Deleted project details');
 
-            // 4. Delete the group
             const result = await client.query(
                 'DELETE FROM groups WHERE id = $1 RETURNING registration_code, team_name, grade, division',
                 [id]
@@ -141,7 +203,6 @@ router.delete('/project/:id', authenticateAdmin, async (req, res) => {
             await client.query('COMMIT');
 
             const deletedProject = result.rows[0];
-            console.log('✅ Project deleted:', deletedProject.registration_code);
 
             res.json({
                 success: true,
