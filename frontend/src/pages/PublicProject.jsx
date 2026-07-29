@@ -346,20 +346,50 @@ const PublicProject = () => {
                     </div>
                 </div>
 
-                {/* Judge Scores */}
-                {project.judge_scores && project.judge_scores.length > 0 && (
-                    <div className="mt-6 border-t pt-4">
-                        <h3 className="font-bold text-gray-700 mb-2">📊 Judge Scores</h3>
-                        <div className="space-y-1">
-                            {project.judge_scores.map((score, idx) => (
-                                <div key={idx} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                                    <span className="font-medium">{score.judge_name}</span>
-                                    <span className="font-bold text-blue-600">{score.score}%</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
+                {/* ✅ JUDGE SCORES - SHOW CONGRATULATORY MESSAGE ONLY */}
+<div className="mt-6 border-t pt-6">
+    <h3 className="text-xl font-bold text-gray-700 mb-4">🏆 Judge Evaluation</h3>
+    
+    {project.has_judge_scores ? (
+        <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 p-6 rounded-lg text-center">
+            <div className="text-5xl mb-3">🎉</div>
+            <h4 className="text-2xl font-bold text-green-700">Congratulations!</h4>
+            <p className="text-green-600 text-lg mt-2">
+                The judges' score has been recorded successfully!
+            </p>
+            <p className="text-sm text-green-500 mt-1">
+                Thank you for participating in Spark 4.0 Science Fair.
+            </p>
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
+                    ✅ Evaluation Complete
+                </span>
+                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                    🏅 All Judges Have Scored
+                </span>
+            </div>
+        </div>
+    ) : (
+        <div className="bg-yellow-50 border border-yellow-200 p-6 rounded-lg text-center">
+            <div className="text-4xl mb-3">⏳</div>
+            <h4 className="text-xl font-bold text-yellow-700">Judges Are Evaluating</h4>
+            <p className="text-yellow-600 mt-1">
+                Your project is currently being reviewed by the judges.
+            </p>
+            <p className="text-sm text-yellow-500 mt-1">
+                Scores will be recorded after all judges have evaluated.
+            </p>
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+                <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">
+                    ⏳ In Progress
+                </span>
+                <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-medium">
+                    👨‍⚖️ Judges Reviewing
+                </span>
+            </div>
+        </div>
+    )}
+</div>
 
                 {/* ✅ Parent Rating - With Time Restriction */}
                 <div className="mt-6 border-t pt-6">
