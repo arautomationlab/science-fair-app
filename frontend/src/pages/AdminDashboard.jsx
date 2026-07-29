@@ -1,3 +1,5 @@
+// frontend/src/pages/AdminDashboard.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -26,6 +28,10 @@ const AdminDashboard = () => {
     const [selectedProject, setSelectedProject] = useState(null);
     const [showStudentDetails, setShowStudentDetails] = useState(false);
 
+    // ✅ Judge Scores Modal States
+    const [showJudgeScores, setShowJudgeScores] = useState(false);
+    const [selectedJudgeProject, setSelectedJudgeProject] = useState(null);
+
     useEffect(() => {
         const userData = JSON.parse(localStorage.getItem('user'));
         if (userData) {
@@ -44,8 +50,9 @@ const AdminDashboard = () => {
             console.log('🔍 Fetching admin data with token:', token);
             console.log('🔍 API URL:', API_URL);
 
+            // ✅ Use the admin dashboard endpoint that includes judge scores
             const [projectsRes, teachersRes] = await Promise.all([
-                axios.get(`${API_URL}/api/admin/all-projects`, {
+                axios.get(`${API_URL}/api/admin/dashboard`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
                 axios.get(`${API_URL}/api/admin/teachers`, {
@@ -123,6 +130,12 @@ const AdminDashboard = () => {
     const viewStudentDetails = (project) => {
         setSelectedProject(project);
         setShowStudentDetails(true);
+    };
+
+    // ✅ View Judge Scores
+    const viewJudgeScores = (project) => {
+        setSelectedJudgeProject(project);
+        setShowJudgeScores(true);
     };
 
     // ✅ Export Registrations to Excel
@@ -207,6 +220,7 @@ const AdminDashboard = () => {
                 'Teacher Guide': p.teacher_guide || 'N/A',
                 'Status': p.project_submitted ? 'Submitted' : 'Pending',
                 'Average Score': p.average_score ? Math.round(p.average_score) + '%' : 'Not yet',
+                'Judge Count': p.judge_count || 0,
                 'Parent Rating': p.parent_rating ? Math.round(p.parent_rating) + ' ⭐' : 'N/A',
                 'Registration Code': p.registration_code || '',
                 'Created': p.created_at ? new Date(p.created_at).toLocaleDateString() : ''
@@ -220,8 +234,8 @@ const AdminDashboard = () => {
         const colWidths = [
             { wch: 25 }, { wch: 30 }, { wch: 8 }, { wch: 10 },
             { wch: 30 }, { wch: 25 }, { wch: 20 }, { wch: 25 },
-            { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 20 },
-            { wch: 15 }
+            { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 15 },
+            { wch: 20 }, { wch: 15 }
         ];
         ws['!cols'] = colWidths;
 
@@ -492,123 +506,134 @@ const AdminDashboard = () => {
             </div>
 
             {/* All Projects Table */}
-<div className="bg-white rounded-lg shadow-lg overflow-hidden">
-    <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-                <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teacher</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Students</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-                {filteredProjects.length === 0 ? (
-                    <tr>
-                        <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
-                            No projects found matching your filters.
-                        </td>
-                    </tr>
-                ) : (
-                    filteredProjects.map((project, index) => {
-                        let students = [];
-                        try {
-                            if (typeof project.students_data === 'string') {
-                                students = JSON.parse(project.students_data || '[]');
-                            } else if (Array.isArray(project.students_data)) {
-                                students = project.students_data;
-                            } else if (project.students_data && typeof project.students_data === 'object') {
-                                students = Object.values(project.students_data);
-                            }
-                        } catch (e) {
-                            console.error('Failed to parse students_data:', e);
-                            students = [];
-                        }
-
-                        const studentNames = students.map(s => {
-                            const firstName = s.firstName || '';
-                            const middleName = s.middleName || '';
-                            const lastName = s.lastName || '';
-                            const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
-                            return fullName || s.name || 'Unknown';
-                        }).join(', ');
-
-                        return (
-                            <tr key={project.id} className="hover:bg-gray-50">
-                                <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
-                                <td className="px-4 py-3">
-                                    {/* ✅ Project Name */}
-                                    <div className="font-medium">{project.team_name || 'N/A'}</div>
-                                    <div className="text-sm text-gray-500">{project.project_title || 'N/A'}</div>
-                                    {/* ✅ Details Button - Small font below project name */}
-                                    <button
-                                        onClick={() => viewStudentDetails(project)}
-                                        className="text-xs text-purple-500 hover:text-purple-700 mt-1 flex items-center gap-1"
-                                    >
-                                        <span>👤</span> View Student Details
-                                    </button>
-                                </td>
-                                <td className="px-4 py-3">{project.grade || 'N/A'} - {project.division || 'N/A'}</td>
-                                <td className="px-4 py-3 text-sm">{project.teacher_guide || project.teacher_name || 'N/A'}</td>
-                                <td className="px-4 py-3 text-sm">
-                                    {studentNames || 'No students'}
-                                </td>
-                                <td className="px-4 py-3">
-                                    <span className={`px-2 py-1 rounded-full text-xs ${
-                                        project.project_submitted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                    }`}>
-                                        {project.project_submitted ? '✅ Submitted' : '⏳ Pending'}
-                                    </span>
-                                    <br />
-                                    <span className="text-xs text-gray-500">
-                                        {project.judge_count || 0}/2 judges
-                                    </span>
-                                </td>
-                                <td className="px-4 py-3">
-                                    {project.average_score ? (
-                                        <span className="font-bold text-blue-600">
-                                            {Math.round(project.average_score)}%
-                                        </span>
-                                    ) : (
-                                        <span className="text-gray-400 text-sm">Not yet</span>
-                                    )}
-                                </td>
-                                <td className="px-4 py-3">
-                                    <button
-                                        onClick={() => navigate(`/project/${project.registration_code}`)}
-                                        className="text-blue-600 hover:text-blue-900 text-sm mr-2"
-                                    >
-                                        View
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(project.registration_code || '');
-                                            toast.success('Code copied!');
-                                        }}
-                                        className="text-gray-600 hover:text-gray-900 text-sm mr-2"
-                                    >
-                                        Copy
-                                    </button>
-                                    <button
-                                        onClick={() => deleteProject(project.id, project.team_name)}
-                                        className="text-red-600 hover:text-red-900 text-sm"
-                                    >
-                                        🗑️ Delete
-                                    </button>
-                                </td>
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Team</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Grade</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teacher</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Students</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Score</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
-                        );
-                    })
-                )}
-            </tbody>
-        </table>
-    </div>
-</div>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {filteredProjects.length === 0 ? (
+                                <tr>
+                                    <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
+                                        No projects found matching your filters.
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredProjects.map((project, index) => {
+                                    let students = [];
+                                    try {
+                                        if (typeof project.students_data === 'string') {
+                                            students = JSON.parse(project.students_data || '[]');
+                                        } else if (Array.isArray(project.students_data)) {
+                                            students = project.students_data;
+                                        } else if (project.students_data && typeof project.students_data === 'object') {
+                                            students = Object.values(project.students_data);
+                                        }
+                                    } catch (e) {
+                                        console.error('Failed to parse students_data:', e);
+                                        students = [];
+                                    }
+
+                                    const studentNames = students.map(s => {
+                                        const firstName = s.firstName || '';
+                                        const middleName = s.middleName || '';
+                                        const lastName = s.lastName || '';
+                                        const fullName = [firstName, middleName, lastName].filter(Boolean).join(' ');
+                                        return fullName || s.name || 'Unknown';
+                                    }).join(', ');
+
+                                    return (
+                                        <tr key={project.id} className="hover:bg-gray-50">
+                                            <td className="px-4 py-3 text-sm text-gray-500">{index + 1}</td>
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium">{project.team_name || 'N/A'}</div>
+                                                <div className="text-sm text-gray-500">{project.project_title || 'N/A'}</div>
+                                                <button
+                                                    onClick={() => viewStudentDetails(project)}
+                                                    className="text-xs text-purple-500 hover:text-purple-700 mt-1 flex items-center gap-1"
+                                                >
+                                                    <span>👤</span> View Student Details
+                                                </button>
+                                            </td>
+                                            <td className="px-4 py-3">{project.grade || 'N/A'} - {project.division || 'N/A'}</td>
+                                            <td className="px-4 py-3 text-sm">{project.teacher_guide || project.teacher_name || 'N/A'}</td>
+                                            <td className="px-4 py-3 text-sm">
+                                                {studentNames || 'No students'}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                                    project.project_submitted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                    {project.project_submitted ? '✅ Submitted' : '⏳ Pending'}
+                                                </span>
+                                                <br />
+                                                <span className="text-xs text-gray-500">
+                                                    {project.judge_count || 0}/2 judges
+                                                </span>
+                                            </td>
+                                            {/* ✅ SCORE COLUMN - CLICKABLE SCORE */}
+                                            <td className="px-4 py-3">
+                                                {project.average_score ? (
+                                                    <button
+                                                        onClick={() => viewJudgeScores(project)}
+                                                        className="font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-center w-full transition-colors duration-200 group relative"
+                                                        title="Click to view judge details"
+                                                    >
+                                                        <span className="text-lg">
+                                                            {Math.round(project.average_score)}%
+                                                        </span>
+                                                        <br />
+                                                        <span className="text-xs text-gray-400 font-normal">
+                                                            {project.judge_count || 0} judge(s)
+                                                        </span>
+                                                        {/* Tooltip */}
+                                                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                                            Click to view judge details
+                                                        </span>
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-gray-400 text-sm">Not yet</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <button
+                                                    onClick={() => navigate(`/project/${project.registration_code}`)}
+                                                    className="text-blue-600 hover:text-blue-900 text-sm mr-2"
+                                                >
+                                                    View
+                                                </button>
+                                                {/* ✅ Scores Button - Opens judge scores modal */}
+                                                <button
+                                                    onClick={() => viewJudgeScores(project)}
+                                                    className="text-green-600 hover:text-green-900 text-sm mr-2"
+                                                >
+                                                    📊 Scores
+                                                </button>
+                                                <button
+                                                    onClick={() => deleteProject(project.id, project.team_name)}
+                                                    className="text-red-600 hover:text-red-900 text-sm"
+                                                >
+                                                    🗑️ Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             {/* Teachers List */}
             <div className="mt-6 bg-white rounded-lg shadow-lg overflow-hidden">
@@ -774,6 +799,91 @@ const AdminDashboard = () => {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ✅ Judge Scores Modal */}
+            {showJudgeScores && selectedJudgeProject && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-gray-800">
+                                📊 Judge Scores: {selectedJudgeProject.team_name}
+                            </h3>
+                            <button
+                                onClick={() => setShowJudgeScores(false)}
+                                className="text-gray-500 hover:text-gray-700 text-2xl"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        
+                        {/* Project Info */}
+                        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                            <p className="text-sm text-gray-500">Project</p>
+                            <p className="font-medium">{selectedJudgeProject.project_title || 'No title'}</p>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Grade {selectedJudgeProject.grade} - {selectedJudgeProject.division}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                                Teacher: {selectedJudgeProject.teacher_guide || 'N/A'}
+                            </p>
+                        </div>
+                        
+                        {/* Average Score */}
+                        <div className="bg-blue-50 p-4 rounded-lg text-center mb-4">
+                            <p className="text-sm text-gray-500">Average Score</p>
+                            <p className="text-3xl font-bold text-blue-600">
+                                {selectedJudgeProject.average_score ? 
+                                    Math.round(selectedJudgeProject.average_score) + '%' : 
+                                    '—'}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                                Based on {selectedJudgeProject.judge_count || 0} judge(s)
+                            </p>
+                        </div>
+                        
+                        {/* Individual Judge Scores */}
+                        <div>
+                            <h4 className="font-semibold mb-2">👨‍⚖️ Individual Judge Scores</h4>
+                            {selectedJudgeProject.judge_scores && selectedJudgeProject.judge_scores.length > 0 ? (
+                                <div className="space-y-2">
+                                    {selectedJudgeProject.judge_scores.map((score, idx) => (
+                                        <div key={idx} className="flex justify-between items-center p-2 border-b hover:bg-gray-50">
+                                            <div>
+                                                <span className="font-medium">{score.judge_name}</span>
+                                                <span className="text-sm text-gray-500 ml-2">
+                                                    {score.criteria || 'General'}
+                                                </span>
+                                                <span className="text-xs text-gray-400 ml-2">
+                                                    {score.created_at ? new Date(score.created_at).toLocaleDateString() : ''}
+                                                </span>
+                                            </div>
+                                            <span className="text-lg font-bold text-blue-600">{score.score}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p className="text-4xl mb-2">📝</p>
+                                    <p>No scores recorded yet</p>
+                                    <p className="text-sm text-gray-400">Waiting for judges to evaluate</p>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Judge Count & Last Updated */}
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg flex justify-between">
+                            <p className="text-sm text-gray-600">
+                                👨‍⚖️ Total Judges: {selectedJudgeProject.judge_count || 0}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                                📅 Updated: {selectedJudgeProject.updated_at ? 
+                                    new Date(selectedJudgeProject.updated_at).toLocaleString() : 
+                                    'N/A'}
+                            </p>
                         </div>
                     </div>
                 </div>
