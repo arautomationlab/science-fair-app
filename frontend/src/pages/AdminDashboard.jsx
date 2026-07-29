@@ -604,15 +604,7 @@ const AdminDashboard = () => {
                                                 >
                                                     View
                                                 </button>
-                                                <button
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(project.registration_code || '');
-                                                        toast.success('Code copied!');
-                                                    }}
-                                                    className="text-gray-600 hover:text-gray-900 text-sm mr-2"
-                                                >
-                                                    Copy
-                                                </button>
+                                                {/* ❌ REMOVED: Copy button - registration code is already visible in View Student Details */}
                                                 {/* ✅ View Scores Button */}
                                                 <button
                                                     onClick={() => viewJudgeScores(project)}
