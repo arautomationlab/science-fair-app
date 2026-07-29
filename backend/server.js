@@ -19,20 +19,18 @@ const authRoutes = require('./src/routes/auth');
 const projectRoutes = require('./src/routes/projects');
 const judgeRoutes = require('./src/routes/judge');
 const ratingRoutes = require('./src/routes/ratings');
-const adminRoutes = require('./src/routes/admin');
+const adminRoutes = require('./src/routes/admin'); // ✅ This one has the dashboard route
 const teacherRoutes = require('./src/routes/teacher');
 const otpRoutes = require('./src/routes/otp');
-const adminSettingsRoutes = require('./src/routes/admin-settings');
 
-// Use Routes
+// ✅ ONLY mount admin routes ONCE
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/judge', judgeRoutes);
 app.use('/api/ratings', ratingRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminRoutes); // ✅ This now works!
 app.use('/api/teacher', teacherRoutes);
 app.use('/api/otp', otpRoutes);
-app.use('/api/admin', adminSettingsRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {
@@ -51,5 +49,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📊 Health check: /api/health`);
+    console.log(`📡 Health check: /api/health`);
 });
