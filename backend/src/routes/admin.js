@@ -4,13 +4,12 @@ const { pool } = require('../config/database');
 const { authenticateAdmin } = require('../middleware/auth');
 
 // ==================== ADMIN DASHBOARD ====================
-// ✅ ADD THIS ROUTE
 router.get('/dashboard', authenticateAdmin, async (req, res) => {
     try {
         console.log('📊 Admin dashboard requested');
 
-        const result = await pool.query(
-            `SELECT 
+        const result = await pool.query(`
+            SELECT 
                 g.id,
                 g.registration_code,
                 g.team_name,
@@ -38,7 +37,7 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
                         json_build_object(
                             'judge_name', js.judge_name,
                             'score', js.score,
-                            'criteria', js.criteria,
+                            'criteria_scores', js.criteria_scores,
                             'created_at', js.created_at
                         )
                     ) 

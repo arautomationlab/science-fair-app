@@ -29,6 +29,9 @@ router.post('/score', async (req, res) => {
 
         const groupId = groupResult.rows[0].id;
 
+        // ✅ Store criteria_scores as JSON
+        const criteriaScoresJSON = criteria_scores ? JSON.stringify(criteria_scores) : null;
+
         // Check if judge already scored this project
         const existing = await pool.query(
             'SELECT * FROM judge_scores WHERE group_id = $1 AND judge_name = $2',
@@ -40,18 +43,18 @@ router.post('/score', async (req, res) => {
             // Update existing score
             result = await pool.query(
                 `UPDATE judge_scores 
-                SET score = $1, comments = $2, created_at = NOW()
-                WHERE group_id = $3 AND judge_name = $4
+                SET score = $1, comments = $2, criteria_scores = $3, created_at = NOW()
+                WHERE group_id = $4 AND judge_name = $5
                 RETURNING *`,
-                [score, comments || '', groupId, judge_name]
+                [score, comments || '', criteriaScoresJSON, groupId, judge_name]
             );
         } else {
-            // Insert new score
+            // Insert new score with criteria_scores
             result = await pool.query(
-                `INSERT INTO judge_scores (group_id, judge_name, score, comments)
-                VALUES ($1, $2, $3, $4)
+                `INSERT INTO judge_scores (group_id, judge_name, score, comments, criteria_scores)
+                VALUES ($1, $2, $3, $4, $5)
                 RETURNING *`,
-                [groupId, judge_name, score, comments || '']
+                [groupId, judge_name, score, comments || '', criteriaScoresJSON]
             );
         }
 
@@ -65,7 +68,7 @@ router.post('/score', async (req, res) => {
         console.error('Judge Score Error:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to record score'
+            message: 'Failed to record score: ' + error.message
         });
     }
 });
@@ -76,23 +79,31 @@ router.get('/scores/:code', async (req, res) => {
         const { code } = req.params;
 
         const result = await pool.query(
-            `SELECT js.judge_name, js.score, js.comments, js.created_at
+            `SELECT js.judge_name, js.score, js.comments, js.criteria_scores, js.created_at
             FROM groups g
             JOIN judge_scores js ON g.id = js.group_id
             WHERE g.registration_code = $1`,
             [code.toUpperCase()]
         );
 
+        // ✅ Parse criteria_scores back to object if needed
+        const scores = result.rows.map(row => {
+            if (row.criteria_scores && typeof row.criteria_scores === 'string') {
+                row.criteria_scores = JSON.parse(row.criteria_scores);
+            }
+            return row;
+        });
+
         res.json({
             success: true,
-            data: result.rows
+            data: scores
         });
 
     } catch (error) {
         console.error('Get Scores Error:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch scores'
+            message: 'Failed to fetch scores: ' + error.message
         });
     }
 });

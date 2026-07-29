@@ -839,33 +839,39 @@ const AdminDashboard = () => {
                         </div>
                         
                         {/* Individual Judge Scores */}
-                        <div>
-                            <h4 className="font-semibold mb-2">👨‍⚖️ Individual Judge Scores</h4>
-                            {selectedJudgeProject.judge_scores && selectedJudgeProject.judge_scores.length > 0 ? (
-                                <div className="space-y-2">
-                                    {selectedJudgeProject.judge_scores.map((score, idx) => (
-                                        <div key={idx} className="flex justify-between items-center p-2 border-b hover:bg-gray-50">
-                                            <div>
-                                                <span className="font-medium">{score.judge_name}</span>
-                                                <span className="text-sm text-gray-500 ml-2">
-                                                    {score.criteria || 'General'}
-                                                </span>
-                                                <span className="text-xs text-gray-400 ml-2">
-                                                    {score.created_at ? new Date(score.created_at).toLocaleDateString() : ''}
-                                                </span>
-                                            </div>
-                                            <span className="text-lg font-bold text-blue-600">{score.score}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 text-gray-500">
-                                    <p className="text-4xl mb-2">📝</p>
-                                    <p>No scores recorded yet</p>
-                                    <p className="text-sm text-gray-400">Waiting for judges to evaluate</p>
-                                </div>
-                            )}
+<div>
+    <h4 className="font-semibold mb-2">👨‍⚖️ Individual Judge Scores</h4>
+    {selectedJudgeProject.judge_scores && selectedJudgeProject.judge_scores.length > 0 ? (
+        <div className="space-y-2">
+            {selectedJudgeProject.judge_scores.map((score, idx) => (
+                <div key={idx} className="p-2 border-b hover:bg-gray-50">
+                    <div className="flex justify-between items-center">
+                        <span className="font-medium">{score.judge_name}</span>
+                        <span className="text-lg font-bold text-blue-600">{score.score}</span>
+                    </div>
+                    {/* ✅ Display criteria scores if available */}
+                    {score.criteria_scores && typeof score.criteria_scores === 'object' && (
+                        <div className="mt-1 grid grid-cols-2 gap-1 text-sm text-gray-600">
+                            {Object.entries(score.criteria_scores).map(([key, value]) => (
+                                <span key={key} className="bg-gray-100 px-2 py-0.5 rounded">
+                                    {key}: {value}
+                                </span>
+                            ))}
                         </div>
+                    )}
+                    <span className="text-xs text-gray-400">
+                        {score.created_at ? new Date(score.created_at).toLocaleDateString() : ''}
+                    </span>
+                </div>
+            ))}
+        </div>
+    ) : (
+        <div className="text-center py-8 text-gray-500">
+            <p className="text-4xl mb-2">📝</p>
+            <p>No scores recorded yet</p>
+        </div>
+    )}
+</div>
                         
                         {/* Judge Count & Last Updated */}
                         <div className="mt-4 p-3 bg-gray-50 rounded-lg flex justify-between">
