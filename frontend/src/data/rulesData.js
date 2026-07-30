@@ -57,7 +57,7 @@ export const rulesData = {
             rules: [
                 "Registration Deadline: 26 July 2026",
                 "Project Submission Deadline: 27 July 2026",
-                "Science Fair Date: 31 July 2026",
+                "Science Fair Date: 1 August 2026",
                 "Results Announcement: 1 August 2026"
             ]
         },

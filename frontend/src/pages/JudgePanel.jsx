@@ -100,7 +100,7 @@ const JudgePanel = () => {
 
     const handleScoreChange = (criteria, value) => {
         const numValue = parseInt(value) || 0;
-        setScores({ ...scores, [criteria]: Math.min(numValue, 25) });
+        setScores({ ...scores, [criteria]: Math.min(numValue, 10) });
     };
 
     // ✅ Not authenticated - Show access form
@@ -117,7 +117,7 @@ const JudgePanel = () => {
                         <label className="block text-sm font-medium text-gray-700">Judge Access Code</label>
                         <input
                             type="password"
-                            placeholder="Enter 4-digit code"
+                            placeholder="Enter access code"
                             value={accessCode}
                             onChange={(e) => setAccessCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
                             className="w-full p-3 border rounded-lg text-center text-2xl font-bold tracking-widest"
@@ -167,44 +167,44 @@ const JudgePanel = () => {
             <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Innovation (0-25)</label>
+                        <label className="block text-sm font-medium text-gray-700">Innovation (0-10)</label>
                         <input
                             type="number"
                             min="0"
-                            max="25"
+                            max="10"
                             value={scores.innovation}
                             onChange={(e) => handleScoreChange('innovation', e.target.value)}
                             className="w-full p-2 border rounded-lg"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Presentation (0-25)</label>
+                        <label className="block text-sm font-medium text-gray-700">Presentation (0-10)</label>
                         <input
                             type="number"
                             min="0"
-                            max="25"
+                            max="10"
                             value={scores.presentation}
                             onChange={(e) => handleScoreChange('presentation', e.target.value)}
                             className="w-full p-2 border rounded-lg"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Research (0-25)</label>
+                        <label className="block text-sm font-medium text-gray-700">Research (0-10)</label>
                         <input
                             type="number"
                             min="0"
-                            max="25"
+                            max="10"
                             value={scores.research}
                             onChange={(e) => handleScoreChange('research', e.target.value)}
                             className="w-full p-2 border rounded-lg"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Impact (0-25)</label>
+                        <label className="block text-sm font-medium text-gray-700">Impact (0-10)</label>
                         <input
                             type="number"
                             min="0"
-                            max="25"
+                            max="10"
                             value={scores.impact}
                             onChange={(e) => handleScoreChange('impact', e.target.value)}
                             className="w-full p-2 border rounded-lg"
@@ -216,7 +216,7 @@ const JudgePanel = () => {
                     <p className="text-sm text-gray-600">
                         Total Score: <span className="font-bold text-lg text-blue-600">
                             {Object.values(scores).reduce((a, b) => a + b, 0)}
-                        </span> / 100
+                        </span> / 40
                     </p>
                 </div>
 

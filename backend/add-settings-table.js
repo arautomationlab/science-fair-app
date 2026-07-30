@@ -37,7 +37,7 @@ async function createTables() {
         await pool.query(`
             INSERT INTO settings (key, value) VALUES 
                 ('registration_locked', 'false'),
-                ('registration_lock_datetime', '2026-07-29 20:00:00'),
+                ('registration_lock_datetime', '2026-07-30 20:00:00'),
                 ('teacher_override_enabled', 'true'),
                 ('teacher_override_used', '0')
             ON CONFLICT (key) DO NOTHING

@@ -164,33 +164,48 @@ if (!students || !Array.isArray(students)) {
                     </div>
                 </div>
 
-                {/* ✅ QR CODE SECTION */}
-                {qrCodeDataUrl ? (
-                    <div className="mt-6 p-4 bg-gray-50 rounded-lg border-2 border-dashed border-blue-300">
-                        <h3 className="text-lg font-semibold text-gray-700 mb-3 text-center">📱 Your QR Code</h3>
-                        <div className="flex flex-col items-center">
-                            <img 
-                                src={qrCodeDataUrl} 
-                                alt="QR Code" 
-                                className="w-48 h-48 border-2 border-gray-300 rounded-lg shadow-lg"
-                            />
-                            <button
-                                onClick={() => downloadQRCode(qrCodeDataUrl, group.registration_code)}
-                                className="mt-3 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm flex items-center gap-2"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                                Download QR Code
-                            </button>
-                            <p className="text-xs text-gray-400 mt-2">Scan this QR code on the fair day</p>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-300 text-center">
-                        <p className="text-yellow-700">📌 QR Code will be available after project submission</p>
-                    </div>
-                )}
+                {/* QR Code Section */}
+<div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+    <h3 className="text-lg font-semibold mb-3">📱 QR Code</h3>
+    {groupData?.qr_code ? (
+        <div className="text-center">
+            <img 
+                src={groupData.qr_code} 
+                alt="Project QR Code" 
+                className="w-48 h-48 mx-auto border-2 border-gray-300 rounded-lg shadow-md"
+            />
+            <p className="text-sm text-gray-600 mt-3">
+                Scan this QR code to view your project details
+            </p>
+            <button
+                onClick={() => {
+                    const link = document.createElement('a');
+                    link.download = `qr-${groupData.registration_code}.png`;
+                    link.href = groupData.qr_code;
+                    link.click();
+                }}
+                className="mt-2 text-blue-600 hover:text-blue-800 text-sm underline"
+            >
+                Download QR Code
+            </button>
+        </div>
+    ) : (
+        <div className="text-center py-6">
+            <p className="text-yellow-600 font-medium">
+                📌 QR Code will be available after project submission
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+                Submit your project to generate your unique QR code
+            </p>
+            <button
+                onClick={() => navigate('/submit-project')}
+                className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            >
+                Submit Project Now
+            </button>
+        </div>
+    )}
+</div>
 
                 {/* ✅ STUDENT CREDENTIALS */}
                 <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">

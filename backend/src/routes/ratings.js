@@ -4,7 +4,7 @@ const { pool } = require('../config/database');
 
 // Check if ratings are open
 function isRatingOpen() {
-    const fairDate = process.env.FAIR_DATE || '2026-07-31';
+    const fairDate = process.env.FAIR_DATE || '2026-08-01';
     const startTime = process.env.FAIR_START_TIME || '09:00';
     const endTime = process.env.FAIR_END_TIME || '16:00';
     
@@ -81,7 +81,7 @@ router.post('/rate', async (req, res) => {
 // Get rating status
 router.get('/status', (req, res) => {
     const isOpen = isRatingOpen();
-    const fairDate = process.env.FAIR_DATE || '2026-07-31';
+    const fairDate = process.env.FAIR_DATE || '2026-08-01';
     const startTime = process.env.FAIR_START_TIME || '09:00';
     const endTime = process.env.FAIR_END_TIME || '16:00';
     

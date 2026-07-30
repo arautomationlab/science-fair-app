@@ -10,7 +10,7 @@ const HeroBanner = () => {
     });
 
     // Set the date for Science Fair (Change this to your actual date)
-    const fairDate = new Date('2026-07-31T09:00:00').getTime();
+    const fairDate = new Date('2026-08-01T09:00:00').getTime();
 
     useEffect(() => {
         const timer = setInterval(() => {
