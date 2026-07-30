@@ -85,10 +85,42 @@ router.get('/all-projects', authenticateAdmin, async (req, res) => {
                 pd.aim, pd.materials, pd.procedure, pd.conclusion,
                 pd.abstract as project_abstract, pd.images, pd.video_link,
                 pd.submitted_at as project_submitted_at,
-                (SELECT AVG(score) FROM judge_scores WHERE group_id = g.id) as average_score,
-                (SELECT COUNT(*) FROM judge_scores WHERE group_id = g.id) as judge_count,
-                (SELECT AVG(stars) FROM parent_ratings WHERE group_id = g.id) as parent_rating,
-                (SELECT COUNT(*) FROM parent_ratings WHERE group_id = g.id) as rating_count,
+                (
+                    SELECT COALESCE(
+                        json_agg(
+                            json_build_object(
+                                'judge_name', js.judge_name,
+                                'score', js.score,
+                                'criteria_scores', js.criteria_scores,
+                                'created_at', js.created_at
+                            )
+                            ORDER BY js.created_at
+                        ),
+                        '[]'::json
+                    )
+                    FROM judge_scores js 
+                    WHERE js.group_id = g.id
+                ) as judge_scores,
+                (
+                    SELECT COUNT(*) 
+                    FROM judge_scores js 
+                    WHERE js.group_id = g.id
+                ) as judge_count,
+                (
+                    SELECT ROUND(AVG(js.score)::numeric, 1)
+                    FROM judge_scores js 
+                    WHERE js.group_id = g.id
+                ) as average_score,
+                (
+                    SELECT AVG(stars) 
+                    FROM parent_ratings 
+                    WHERE group_id = g.id
+                ) as parent_rating,
+                (
+                    SELECT COUNT(*) 
+                    FROM parent_ratings 
+                    WHERE group_id = g.id
+                ) as rating_count,
                 u.full_name as teacher_name
             FROM groups g
             LEFT JOIN project_details pd ON g.id = pd.group_id
