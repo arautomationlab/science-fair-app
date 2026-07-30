@@ -87,82 +87,93 @@ const Winners = () => {
         return students;
     };
 
-    // ✅ Export to Excel - with safe judge_scores handling
-    const exportToExcel = () => {
-        const gradeProjects = allProjects.filter(p => p.grade === parseInt(grade));
-        
-        if (gradeProjects.length === 0) {
-            toast.error('No projects found for this grade');
-            return;
-        }
+    // ✅ Export to Excel - with Total Score out of 40 per judge
+const exportToExcel = () => {
+    const gradeProjects = allProjects.filter(p => p.grade === parseInt(grade));
+    
+    if (gradeProjects.length === 0) {
+        toast.error('No projects found for this grade');
+        return;
+    }
 
-        const exportData = gradeProjects.map(project => {
-            // ✅ SAFELY PARSE judge_scores
-            let judgeScores = [];
-            if (project.judge_scores) {
-                if (Array.isArray(project.judge_scores)) {
-                    judgeScores = project.judge_scores;
-                } else if (typeof project.judge_scores === 'string') {
-                    try {
-                        judgeScores = JSON.parse(project.judge_scores);
-                    } catch (e) {
-                        judgeScores = [];
-                    }
-                } else if (typeof project.judge_scores === 'object') {
-                    judgeScores = Object.values(project.judge_scores);
+    const exportData = gradeProjects.map(project => {
+        // ✅ Get judge scores
+        let judgeScores = [];
+        if (project.judge_scores) {
+            if (Array.isArray(project.judge_scores)) {
+                judgeScores = project.judge_scores;
+            } else if (typeof project.judge_scores === 'string') {
+                try {
+                    judgeScores = JSON.parse(project.judge_scores);
+                } catch (e) {
+                    judgeScores = [];
                 }
             }
+        }
 
-            if (!Array.isArray(judgeScores)) {
-                judgeScores = [];
-            }
+        if (!Array.isArray(judgeScores)) {
+            judgeScores = [];
+        }
 
-            // Sort by judge name
-            judgeScores = judgeScores.sort((a, b) => 
-                (a.judge_name || '').localeCompare(b.judge_name || '')
-            );
+        // Sort by judge name
+        judgeScores = judgeScores.sort((a, b) => 
+            (a.judge_name || '').localeCompare(b.judge_name || '')
+        );
 
-            const row = {
-                'Team Name': project.team_name || 'N/A',
-                'Students': getStudentNames(project.students_data),
-                'Grade': project.grade || 'N/A',
-                'Division': project.division || 'N/A',
-            };
+        const row = {
+            'Team Name': project.team_name || 'N/A',
+            'Students': getStudentNames(project.students_data),
+            'Grade': project.grade || 'N/A',
+            'Division': project.division || 'N/A',
+        };
 
-            judgeScores.forEach((score, index) => {
-                row[`Judge ${index + 1}`] = score.score || 'N/A';
-            });
-
-            const scores = judgeScores.map(s => s.score).filter(s => s !== undefined && s !== null && !isNaN(s));
-            const total = scores.reduce((sum, s) => sum + s, 0);
-            const avg = scores.length > 0 ? (total / scores.length) : 0;
-
-            row['Total Score'] = total || 'N/A';
-            row['Average %'] = scores.length > 0 ? Math.round(avg) + '%' : 'N/A';
-            row['Number of Judges'] = judgeScores.length;
-
-            return row;
+        // ✅ Add each judge's score (out of 40)
+        const scores = [];
+        judgeScores.forEach((score, index) => {
+            const scoreValue = score.score || 0;
+            row[`Judge ${index + 1} (out of 40)`] = scoreValue;
+            scores.push(scoreValue);
         });
 
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        const colWidths = [
-            { wch: 30 }, { wch: 40 }, { wch: 10 }, { wch: 12 },
-        ];
-        for (let i = 0; i < 10; i++) {
-            colWidths.push({ wch: 15 });
-        }
-        colWidths.push({ wch: 15 }, { wch: 15 }, { wch: 15 });
-        ws['!cols'] = colWidths;
-
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, `Grade ${grade} Scores`);
-
-        const filename = `Grade_${grade}_Scores_${new Date().toISOString().slice(0,10)}.xlsx`;
-        XLSX.writeFile(wb, filename);
+        // ✅ Calculate TOTAL (sum of all judges' scores)
+        const total = scores.reduce((sum, s) => sum + s, 0);
+        const maxPossible = scores.length * 40; // Each judge has max 40
         
-        toast.success(`✅ Grade ${grade} scores exported successfully!`);
-        setShowExportModal(false);
-    };
+        row['Total Score'] = scores.length > 0 ? `${total}/${maxPossible}` : 'N/A';
+        row['Average %'] = scores.length > 0 ? Math.round((total / maxPossible) * 100) + '%' : 'N/A';
+        row['Number of Judges'] = judgeScores.length;
+
+        return row;
+    });
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Set column widths
+    const colWidths = [
+        { wch: 30 }, // Team Name
+        { wch: 40 }, // Students
+        { wch: 10 }, // Grade
+        { wch: 12 }, // Division
+        { wch: 18 }, // Judge 1 (out of 40)
+        { wch: 18 }, // Judge 2 (out of 40)
+        { wch: 18 }, // Judge 3 (out of 40)
+        { wch: 18 }, // Judge 4 (out of 40)
+        { wch: 18 }, // Total Score
+        { wch: 15 }, // Average %
+        { wch: 15 }, // Number of Judges
+    ];
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `Grade ${grade} Scores`);
+
+    const filename = `Grade_${grade}_Scores_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb, filename);
+    
+    toast.success(`✅ Grade ${grade} scores exported successfully!`);
+    setShowExportModal(false);
+};
 
     const getMedal = (position) => {
         const medals = ['🥇', '🥈', '🥉'];

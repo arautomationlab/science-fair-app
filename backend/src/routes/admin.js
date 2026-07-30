@@ -112,6 +112,11 @@ router.get('/all-projects', authenticateAdmin, async (req, res) => {
                     WHERE js.group_id = g.id
                 ) as average_score,
                 (
+                    SELECT SUM(js.score) 
+                    FROM judge_scores js 
+                    WHERE js.group_id = g.id
+                ) as total_score,
+                (
                     SELECT AVG(stars) 
                     FROM parent_ratings 
                     WHERE group_id = g.id
