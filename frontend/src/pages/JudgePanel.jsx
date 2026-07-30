@@ -1,16 +1,19 @@
 // frontend/src/pages/JudgePanel.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
 
 const JudgePanel = () => {
+    const { code } = useParams(); // ✅ Gets registration code from URL
+    const navigate = useNavigate();
+    
     const [accessCode, setAccessCode] = useState('');
+    const [judgeName, setJudgeName] = useState('');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [judgeInfo, setJudgeInfo] = useState(null);
-    const [projectCode, setProjectCode] = useState('');
     const [scores, setScores] = useState({
         innovation: 0,
         presentation: 0,
@@ -22,12 +25,12 @@ const JudgePanel = () => {
     // ✅ Verify judge access
     const verifyAccess = async () => {
         if (!accessCode) {
-            toast.error('Please enter the judge access code');
+            toast.error('Please enter your judge access code');
             return;
         }
 
-        if (accessCode.length !== 4 || !/^\d{4}$/.test(accessCode)) {
-            toast.error('Please enter a valid 4-digit code');
+        if (!judgeName) {
+            toast.error('Please enter your name');
             return;
         }
 
@@ -39,12 +42,8 @@ const JudgePanel = () => {
 
             if (response.data.success) {
                 localStorage.setItem('judge_token', response.data.token);
-                setJudgeInfo({
-                    judge_name: response.data.judge_name,
-                    access_code: response.data.access_code
-                });
                 setIsAuthenticated(true);
-                toast.success(`Welcome, ${response.data.judge_name}!`);
+                toast.success(`Welcome, ${judgeName}!`);
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Invalid access code');
@@ -53,14 +52,8 @@ const JudgePanel = () => {
         }
     };
 
-    // ✅ Submit judge score
+    // ✅ Submit scores
     const submitScore = async () => {
-        if (!projectCode) {
-            toast.error('Please enter the project code');
-            return;
-        }
-
-        // Calculate total
         const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
 
         if (totalScore === 0) {
@@ -75,7 +68,8 @@ const JudgePanel = () => {
             const response = await axios.post(
                 `${API_URL}/api/judge/score`,
                 {
-                    registration_code: projectCode,
+                    registration_code: code, // ✅ From URL
+                    judge_name: judgeName,
                     score: Math.round(totalScore / 4),
                     criteria_scores: scores
                 },
@@ -86,13 +80,16 @@ const JudgePanel = () => {
 
             if (response.data.success) {
                 toast.success('✅ Score recorded successfully!');
-                setProjectCode('');
                 setScores({
                     innovation: 0,
                     presentation: 0,
                     research: 0,
                     impact: 0
                 });
+                // Navigate back to project page after 2 seconds
+                setTimeout(() => {
+                    navigate(`/project/${code}`);
+                }, 2000);
             }
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to record score');
@@ -101,66 +98,73 @@ const JudgePanel = () => {
         }
     };
 
-    // Handle score change
     const handleScoreChange = (criteria, value) => {
         const numValue = parseInt(value) || 0;
         setScores({ ...scores, [criteria]: Math.min(numValue, 25) });
     };
 
-    // If not authenticated, show access code form
+    // ✅ Not authenticated - Show access form
     if (!isAuthenticated) {
         return (
             <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded-lg shadow-lg">
                 <h2 className="text-2xl font-bold text-center mb-6">👨‍⚖️ Judge Access</h2>
                 <p className="text-gray-600 text-center mb-4">
-                    Enter your 4-digit access code to continue
+                    Enter your access code and name to judge this project
                 </p>
-                <input
-                    type="password"
-                    placeholder="Enter 4-digit code"
-                    value={accessCode}
-                    onChange={(e) => setAccessCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    className="w-full p-3 border rounded-lg mb-4 text-center text-2xl font-bold tracking-widest"
-                    maxLength="4"
-                    autoFocus
-                    onKeyPress={(e) => e.key === 'Enter' && verifyAccess()}
-                />
-                <button
-                    onClick={verifyAccess}
-                    disabled={loading || accessCode.length !== 4}
-                    className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {loading ? 'Verifying...' : '🔑 Access Judge Panel'}
-                </button>
-                <p className="text-xs text-gray-400 text-center mt-4">
-                    Contact admin if you don't have an access code
-                </p>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Judge Access Code</label>
+                        <input
+                            type="password"
+                            placeholder="Enter 4-digit code"
+                            value={accessCode}
+                            onChange={(e) => setAccessCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                            className="w-full p-3 border rounded-lg text-center text-2xl font-bold tracking-widest"
+                            maxLength="4"
+                        />
+                    </div>
+                    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Your Name</label>
+                        <input
+                            type="text"
+                            placeholder="Enter your full name"
+                            value={judgeName}
+                            onChange={(e) => setJudgeName(e.target.value)}
+                            className="w-full p-3 border rounded-lg"
+                        />
+                    </div>
+
+                    <button
+                        onClick={verifyAccess}
+                        disabled={loading || accessCode.length !== 4 || !judgeName}
+                        className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Verifying...' : '🔑 Enter Judge Panel'}
+                    </button>
+                </div>
             </div>
         );
     }
 
-    // Judge scoring panel
+    // ✅ Authenticated - Show scoring form
     return (
         <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">👨‍⚖️ Judge Panel</h2>
                 <div className="text-sm text-gray-500">
-                    Welcome, <span className="font-semibold">{judgeInfo?.judge_name}</span>
+                    Judge: <span className="font-semibold">{judgeName}</span>
                 </div>
             </div>
 
-            <div className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Project Code</label>
-                    <input
-                        type="text"
-                        placeholder="e.g., SPARK4.0-5-XXXXX"
-                        value={projectCode}
-                        onChange={(e) => setProjectCode(e.target.value.toUpperCase())}
-                        className="w-full p-2 border rounded-lg"
-                    />
-                </div>
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">
+                    Project Code: <span className="font-mono font-bold">{code}</span>
+                </p>
+            </div>
 
+            <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Innovation (0-25)</label>
@@ -213,9 +217,6 @@ const JudgePanel = () => {
                         Total Score: <span className="font-bold text-lg text-blue-600">
                             {Object.values(scores).reduce((a, b) => a + b, 0)}
                         </span> / 100
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                        Average: {Math.round(Object.values(scores).reduce((a, b) => a + b, 0) / 4)}%
                     </p>
                 </div>
 
