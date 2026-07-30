@@ -17,7 +17,6 @@ router.post('/verify-access', async (req, res) => {
             });
         }
 
-        // ✅ Check if access code exists and is active
         const result = await pool.query(
             `SELECT id, access_code, judge_name, is_active, used_count, expires_at
              FROM judge_access_codes 
@@ -34,7 +33,6 @@ router.post('/verify-access', async (req, res) => {
 
         const codeData = result.rows[0];
 
-        // ✅ Check if code has expired
         if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
             return res.status(401).json({
                 success: false,
@@ -42,7 +40,6 @@ router.post('/verify-access', async (req, res) => {
             });
         }
 
-        // ✅ Generate JWT token for judge
         const token = jwt.sign(
             { 
                 judge_id: codeData.id,
@@ -54,7 +51,6 @@ router.post('/verify-access', async (req, res) => {
             { expiresIn: '8h' }
         );
 
-        // ✅ Update usage count
         await pool.query(
             `UPDATE judge_access_codes 
              SET used_count = used_count + 1, last_used_at = NOW()
@@ -82,8 +78,9 @@ router.post('/verify-access', async (req, res) => {
 // ==================== SUBMIT JUDGE SCORE ====================
 router.post('/score', async (req, res) => {
     try {
-        // ✅ Verify judge token
-        const token = req.headers.authorization?.split(' ')[1];
+        // ✅ FIXED: Use ternary operator instead of optional chaining
+        const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+        
         if (!token) {
             return res.status(401).json({
                 success: false,
@@ -103,7 +100,6 @@ router.post('/score', async (req, res) => {
 
         const { registration_code, score, comments, criteria_scores } = req.body;
 
-        // Find the group
         const groupResult = await pool.query(
             'SELECT id FROM groups WHERE registration_code = $1',
             [registration_code.toUpperCase()]
@@ -119,7 +115,6 @@ router.post('/score', async (req, res) => {
         const groupId = groupResult.rows[0].id;
         const judgeName = decoded.judge_name;
 
-        // ✅ Store score with criteria_scores
         const criteriaScoresJSON = criteria_scores ? JSON.stringify(criteria_scores) : null;
 
         const existing = await pool.query(
@@ -197,8 +192,9 @@ router.get('/scores/:code', async (req, res) => {
 // ==================== GET JUDGE ACCESS CODES (ADMIN ONLY) ====================
 router.get('/access-codes', async (req, res) => {
     try {
-        // Verify admin
-        const token = req.headers.authorization?.split(' ')[1];
+        // ✅ FIXED: Use ternary operator instead of optional chaining
+        const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+        
         if (!token) {
             return res.status(401).json({ success: false, message: 'Authentication required' });
         }
@@ -231,7 +227,9 @@ router.get('/access-codes', async (req, res) => {
 // ==================== CREATE NEW ACCESS CODE (ADMIN ONLY) ====================
 router.post('/access-codes', async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' '')[1];
+        // ✅ FIXED: Use ternary operator instead of optional chaining
+        const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+        
         if (!token) {
             return res.status(401).json({ success: false, message: 'Authentication required' });
         }
@@ -250,7 +248,6 @@ router.post('/access-codes', async (req, res) => {
             });
         }
 
-        // Generate random 4-digit code if not provided
         const finalCode = access_code || String(Math.floor(1000 + Math.random() * 9000));
 
         const result = await pool.query(
@@ -278,7 +275,9 @@ router.post('/access-codes', async (req, res) => {
 // ==================== TOGGLE ACCESS CODE STATUS (ADMIN ONLY) ====================
 router.put('/access-codes/:id/toggle', async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        // ✅ FIXED: Use ternary operator instead of optional chaining
+        const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+        
         if (!token) {
             return res.status(401).json({ success: false, message: 'Authentication required' });
         }
