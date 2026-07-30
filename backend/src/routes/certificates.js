@@ -19,7 +19,7 @@ cloudinary.config({
 });
 
 // Certificate Template URL (Replace with your uploaded template URL)
-const TEMPLATE_URL = process.env.CERTIFICATE_TEMPLATE_URL || 'https://res.cloudinary.com/zr8wz6c7/image/upload/v1785421683/certificate-template.jpg';
+const TEMPLATE_URL = process.env.CERTIFICATE_TEMPLATE_URL || 'https://res.cloudinary.com/zr8wz6c7/image/upload/v1785430786/WhatsApp_Image_2026-07-30_at_12.31.27_PM_memtfi.jpg';
 
 // Check if certificates are available
 function areCertificatesAvailable() {
