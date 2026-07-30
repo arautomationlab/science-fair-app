@@ -8,6 +8,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.o
 const Dashboard = () => {
     const navigate = useNavigate();
     const [group, setGroup] = useState(null);
+    const [groupData, setGroupData] = useState(null);
     const [projectDetails, setProjectDetails] = useState(null);
     const [loading, setLoading] = useState(true);
 
