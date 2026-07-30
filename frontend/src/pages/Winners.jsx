@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// ✅ ADD THIS - API URL at the top
 const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
 
 const Winners = () => {
@@ -16,7 +15,6 @@ const Winners = () => {
         fetchWinners();
     }, [grade]);
 
-    // ✅ FIXED - Added const response = await axios.get()
     const fetchWinners = async () => {
         try {
             const token = localStorage.getItem('token');
@@ -42,6 +40,22 @@ const Winners = () => {
     const getMedalColor = (position) => {
         const colors = ['text-yellow-600', 'text-gray-500', 'text-amber-700'];
         return colors[position] || 'text-blue-600';
+    };
+
+    // ✅ Helper function to safely get student names
+    const getStudentNames = (studentsData) => {
+        let students = studentsData;
+        if (typeof students === 'string') {
+            try {
+                students = JSON.parse(students);
+            } catch (e) {
+                return [];
+            }
+        }
+        if (!students || !Array.isArray(students)) {
+            return [];
+        }
+        return students;
     };
 
     if (loading) {
@@ -72,46 +86,54 @@ const Winners = () => {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {winners.map((winner, index) => (
-                            <div 
-                                key={index}
-                                className={`border-2 rounded-lg p-6 ${
-                                    index === 0 ? 'border-yellow-400 bg-yellow-50' :
-                                    index === 1 ? 'border-gray-300 bg-gray-50' :
-                                    'border-amber-300 bg-amber-50'
-                                }`}
-                            >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-center gap-4">
-                                        <span className={`text-4xl ${getMedalColor(index)}`}>
-                                            {getMedal(index)}
-                                        </span>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-gray-800">
-                                                {winner.team_name}
-                                            </h3>
-                                            <p className="text-gray-600">{winner.project_title}</p>
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                {JSON.parse(winner.students_data || '[]').map((student, idx) => (
-                                                    <span key={idx} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                                                        {student.name}
-                                                    </span>
-                                                ))}
+                        {winners.map((winner, index) => {
+                            const students = getStudentNames(winner.students_data);
+                            
+                            return (
+                                <div 
+                                    key={index}
+                                    className={`border-2 rounded-lg p-6 ${
+                                        index === 0 ? 'border-yellow-400 bg-yellow-50' :
+                                        index === 1 ? 'border-gray-300 bg-gray-50' :
+                                        'border-amber-300 bg-amber-50'
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <span className={`text-4xl ${getMedalColor(index)}`}>
+                                                {getMedal(index)}
+                                            </span>
+                                            <div>
+                                                <h3 className="text-xl font-bold text-gray-800">
+                                                    {winner.team_name}
+                                                </h3>
+                                                <p className="text-gray-600">{winner.project_title}</p>
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {students.length > 0 ? (
+                                                        students.map((student, idx) => (
+                                                            <span key={idx} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                                                                {student.firstName || student.name || 'Unknown'}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-sm text-gray-400">No students listed</span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-sm text-gray-500">Average Score</p>
-                                        <p className="text-2xl font-bold text-blue-600">
-                                            {Math.round(winner.average_score)}%
-                                        </p>
-                                        <p className="text-xs text-gray-400">
-                                            {winner.total_judges} judges
-                                        </p>
+                                        <div className="text-right">
+                                            <p className="text-sm text-gray-500">Average Score</p>
+                                            <p className="text-2xl font-bold text-blue-600">
+                                                {Math.round(winner.average_score)}%
+                                            </p>
+                                            <p className="text-xs text-gray-400">
+                                                {winner.total_judges} judges
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
 
