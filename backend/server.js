@@ -22,6 +22,7 @@ const ratingRoutes = require('./src/routes/ratings');
 const adminRoutes = require('./src/routes/admin'); // ✅ This one has the dashboard route
 const teacherRoutes = require('./src/routes/teacher');
 const otpRoutes = require('./src/routes/otp');
+const certificateRoutes = require('./src/routes/certificates');
 
 // ✅ ONLY mount admin routes ONCE
 app.use('/api/auth', authRoutes);
@@ -31,6 +32,7 @@ app.use('/api/ratings', ratingRoutes);
 app.use('/api/admin', adminRoutes); // ✅ This now works!
 app.use('/api/teacher', teacherRoutes);
 app.use('/api/otp', otpRoutes);
+app.use('/api/certificates', certificateRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {
