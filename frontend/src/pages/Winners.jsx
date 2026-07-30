@@ -1,7 +1,10 @@
+// frontend/src/pages/Winners.jsx
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import * as XLSX from 'xlsx'; // ✅ ADD THIS
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
 
@@ -10,9 +13,12 @@ const Winners = () => {
     const navigate = useNavigate();
     const [winners, setWinners] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [allProjects, setAllProjects] = useState([]);
+    const [showExportModal, setShowExportModal] = useState(false);
 
     useEffect(() => {
         fetchWinners();
+        fetchAllProjects();
     }, [grade]);
 
     const fetchWinners = async () => {
@@ -32,17 +38,22 @@ const Winners = () => {
         }
     };
 
-    const getMedal = (position) => {
-        const medals = ['🥇', '🥈', '🥉'];
-        return medals[position] || '🏅';
+    const fetchAllProjects = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(`${API_URL}/api/admin/all-projects`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.data.success) {
+                // Filter projects by grade
+                const filtered = response.data.data.filter(p => p.grade === parseInt(grade));
+                setAllProjects(filtered);
+            }
+        } catch (error) {
+            console.error('Fetch All Projects Error:', error);
+        }
     };
 
-    const getMedalColor = (position) => {
-        const colors = ['text-yellow-600', 'text-gray-500', 'text-amber-700'];
-        return colors[position] || 'text-blue-600';
-    };
-
-    // ✅ Helper function to safely get student names
     const getStudentNames = (studentsData) => {
         let students = studentsData;
         if (typeof students === 'string') {
@@ -55,7 +66,96 @@ const Winners = () => {
         if (!students || !Array.isArray(students)) {
             return [];
         }
-        return students;
+        return students.map(s => `${s.firstName || ''} ${s.lastName || ''}`.trim()).join(', ');
+    };
+
+    // ✅ Export to Excel
+    const exportToExcel = () => {
+        // Get all projects for this grade
+        const gradeProjects = allProjects.filter(p => p.grade === parseInt(grade));
+        
+        if (gradeProjects.length === 0) {
+            toast.error('No projects found for this grade');
+            return;
+        }
+
+        // Prepare data for Excel
+        const exportData = gradeProjects.map(project => {
+            // Parse judge scores
+            let judgeScores = [];
+            if (project.judge_scores && Array.isArray(project.judge_scores)) {
+                // Sort by judge name or order
+                judgeScores = project.judge_scores.sort((a, b) => 
+                    a.judge_name.localeCompare(b.judge_name)
+                );
+            }
+
+            // Create row data
+            const row = {
+                'Team Name': project.team_name || 'N/A',
+                'Students': getStudentNames(project.students_data),
+                'Grade': project.grade || 'N/A',
+                'Division': project.division || 'N/A',
+            };
+
+            // Add each judge's score
+            judgeScores.forEach((score, index) => {
+                row[`Judge ${index + 1}`] = score.score || 'N/A';
+            });
+
+            // Add total and average
+            const scores = judgeScores.map(s => s.score).filter(s => s !== undefined && s !== null);
+            const total = scores.reduce((sum, s) => sum + s, 0);
+            const avg = scores.length > 0 ? (total / scores.length) : 0;
+
+            row['Total (out of ' + (scores.length * 100) + ')'] = total || 'N/A';
+            row['Average %'] = scores.length > 0 ? Math.round(avg) + '%' : 'N/A';
+            row['Number of Judges'] = judgeScores.length;
+
+            return row;
+        });
+
+        // Create worksheet
+        const ws = XLSX.utils.json_to_sheet(exportData);
+
+        // Set column widths
+        const colWidths = [
+            { wch: 30 }, // Team Name
+            { wch: 40 }, // Students
+            { wch: 10 }, // Grade
+            { wch: 12 }, // Division
+        ];
+
+        // Add widths for judge columns (max 10 judges)
+        for (let i = 0; i < 10; i++) {
+            colWidths.push({ wch: 15 });
+        }
+        colWidths.push({ wch: 15 }); // Total
+        colWidths.push({ wch: 15 }); // Average
+        colWidths.push({ wch: 15 }); // Number of Judges
+
+        ws['!cols'] = colWidths;
+
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, `Grade ${grade} Scores`);
+
+        // Generate filename
+        const filename = `Grade_${grade}_Scores_${new Date().toISOString().slice(0,10)}.xlsx`;
+        XLSX.writeFile(wb, filename);
+        
+        toast.success(`✅ Grade ${grade} scores exported successfully!`);
+        setShowExportModal(false);
+    };
+
+    const getMedal = (position) => {
+        const medals = ['🥇', '🥈', '🥉'];
+        return medals[position] || '🏅';
+    };
+
+    const getMedalColor = (position) => {
+        const colors = ['text-yellow-600', 'text-gray-500', 'text-amber-700'];
+        return colors[position] || 'text-blue-600';
     };
 
     if (loading) {
@@ -137,7 +237,7 @@ const Winners = () => {
                     </div>
                 )}
 
-                <div className="mt-6 flex gap-4">
+                <div className="mt-6 flex flex-wrap gap-4">
                     <button
                         onClick={() => navigate('/admin')}
                         className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
@@ -149,6 +249,12 @@ const Winners = () => {
                         className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
                     >
                         🖨️ Print Results
+                    </button>
+                    <button
+                        onClick={exportToExcel}
+                        className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+                    >
+                        📊 Export to Excel
                     </button>
                 </div>
             </div>
