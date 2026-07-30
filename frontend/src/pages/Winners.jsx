@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import * as XLSX from 'xlsx'; // ✅ ADD THIS
+import * as XLSX from 'xlsx';
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://science-fair-backend.onrender.com';
 
@@ -60,18 +60,35 @@ const Winners = () => {
             try {
                 students = JSON.parse(students);
             } catch (e) {
+                return '';
+            }
+        }
+        if (!students || !Array.isArray(students)) {
+            return '';
+        }
+        return students.map(s => {
+            const name = `${s.firstName || ''} ${s.lastName || ''}`.trim();
+            return name || s.name || 'Unknown';
+        }).join(', ');
+    };
+
+    const getStudentArray = (studentsData) => {
+        let students = studentsData;
+        if (typeof students === 'string') {
+            try {
+                students = JSON.parse(students);
+            } catch (e) {
                 return [];
             }
         }
         if (!students || !Array.isArray(students)) {
             return [];
         }
-        return students.map(s => `${s.firstName || ''} ${s.lastName || ''}`.trim()).join(', ');
+        return students;
     };
 
-    // ✅ Export to Excel
+    // ✅ Export to Excel - with safe judge_scores handling
     const exportToExcel = () => {
-        // Get all projects for this grade
         const gradeProjects = allProjects.filter(p => p.grade === parseInt(grade));
         
         if (gradeProjects.length === 0) {
@@ -79,18 +96,32 @@ const Winners = () => {
             return;
         }
 
-        // Prepare data for Excel
         const exportData = gradeProjects.map(project => {
-            // Parse judge scores
+            // ✅ SAFELY PARSE judge_scores
             let judgeScores = [];
-            if (project.judge_scores && Array.isArray(project.judge_scores)) {
-                // Sort by judge name or order
-                judgeScores = project.judge_scores.sort((a, b) => 
-                    a.judge_name.localeCompare(b.judge_name)
-                );
+            if (project.judge_scores) {
+                if (Array.isArray(project.judge_scores)) {
+                    judgeScores = project.judge_scores;
+                } else if (typeof project.judge_scores === 'string') {
+                    try {
+                        judgeScores = JSON.parse(project.judge_scores);
+                    } catch (e) {
+                        judgeScores = [];
+                    }
+                } else if (typeof project.judge_scores === 'object') {
+                    judgeScores = Object.values(project.judge_scores);
+                }
             }
 
-            // Create row data
+            if (!Array.isArray(judgeScores)) {
+                judgeScores = [];
+            }
+
+            // Sort by judge name
+            judgeScores = judgeScores.sort((a, b) => 
+                (a.judge_name || '').localeCompare(b.judge_name || '')
+            );
+
             const row = {
                 'Team Name': project.team_name || 'N/A',
                 'Students': getStudentNames(project.students_data),
@@ -98,49 +129,34 @@ const Winners = () => {
                 'Division': project.division || 'N/A',
             };
 
-            // Add each judge's score
             judgeScores.forEach((score, index) => {
                 row[`Judge ${index + 1}`] = score.score || 'N/A';
             });
 
-            // Add total and average
-            const scores = judgeScores.map(s => s.score).filter(s => s !== undefined && s !== null);
+            const scores = judgeScores.map(s => s.score).filter(s => s !== undefined && s !== null && !isNaN(s));
             const total = scores.reduce((sum, s) => sum + s, 0);
             const avg = scores.length > 0 ? (total / scores.length) : 0;
 
-            row['Total (out of ' + (scores.length * 100) + ')'] = total || 'N/A';
+            row['Total Score'] = total || 'N/A';
             row['Average %'] = scores.length > 0 ? Math.round(avg) + '%' : 'N/A';
             row['Number of Judges'] = judgeScores.length;
 
             return row;
         });
 
-        // Create worksheet
         const ws = XLSX.utils.json_to_sheet(exportData);
-
-        // Set column widths
         const colWidths = [
-            { wch: 30 }, // Team Name
-            { wch: 40 }, // Students
-            { wch: 10 }, // Grade
-            { wch: 12 }, // Division
+            { wch: 30 }, { wch: 40 }, { wch: 10 }, { wch: 12 },
         ];
-
-        // Add widths for judge columns (max 10 judges)
         for (let i = 0; i < 10; i++) {
             colWidths.push({ wch: 15 });
         }
-        colWidths.push({ wch: 15 }); // Total
-        colWidths.push({ wch: 15 }); // Average
-        colWidths.push({ wch: 15 }); // Number of Judges
-
+        colWidths.push({ wch: 15 }, { wch: 15 }, { wch: 15 });
         ws['!cols'] = colWidths;
 
-        // Create workbook
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, `Grade ${grade} Scores`);
 
-        // Generate filename
         const filename = `Grade_${grade}_Scores_${new Date().toISOString().slice(0,10)}.xlsx`;
         XLSX.writeFile(wb, filename);
         
@@ -187,7 +203,7 @@ const Winners = () => {
                 ) : (
                     <div className="space-y-4">
                         {winners.map((winner, index) => {
-                            const students = getStudentNames(winner.students_data);
+                            const students = getStudentArray(winner.students_data);
                             
                             return (
                                 <div 
