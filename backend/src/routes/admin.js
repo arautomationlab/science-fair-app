@@ -149,6 +149,158 @@ router.get('/all-projects', authenticateAdmin, async (req, res) => {
     }
 });
 
+// ==================== EXPORT ALL QR CODES ====================
+router.get('/export-qr-codes', authenticateAdmin, async (req, res) => {
+    try {
+        console.log('📱 Exporting all QR codes...');
+        
+        // Get all groups with QR codes
+        const result = await pool.query(
+            `SELECT 
+                g.id,
+                g.registration_code,
+                g.team_name,
+                g.grade,
+                g.division,
+                g.students_data,
+                g.qr_code
+             FROM groups g
+             WHERE g.qr_code IS NOT NULL
+             ORDER BY g.grade, g.division`
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No QR codes found'
+            });
+        }
+        
+        // Generate PDF with QR codes
+        const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
+        const QRCode = require('qrcode');
+        const cloudinary = require('cloudinary').v2;
+        
+        const pdfDoc = await PDFDocument.create();
+        const pageWidth = 595; // A4 width in points
+        const pageHeight = 842; // A4 height in points
+        let page = pdfDoc.addPage([pageWidth, pageHeight]);
+        
+        let x = 30;
+        let y = pageHeight - 50;
+        const labelHeight = 80;
+        const qrSize = 100;
+        const spacing = 20;
+        const colsPerRow = 4;
+        let count = 0;
+        
+        // Load font
+        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        
+        for (const group of result.rows) {
+            // Parse students
+            let students = group.students_data;
+            if (typeof students === 'string') {
+                students = JSON.parse(students);
+            }
+            if (!Array.isArray(students)) {
+                students = [];
+            }
+            
+            const studentNames = students.map(s => 
+                `${s.firstName || ''} ${s.lastName || ''}`.trim()
+            ).join(', ') || group.team_name || 'Unknown';
+            
+            // Generate QR code as image
+            const qrDataUrl = group.qr_code || await QRCode.toDataURL(
+                `${process.env.APP_URL || 'https://science-fair-app.vercel.app'}/project/${group.registration_code}`
+            );
+            
+            // Convert base64 to image
+            const qrImageBytes = Buffer.from(qrDataUrl.split(',')[1], 'base64');
+            const qrImage = await pdfDoc.embedPng(qrImageBytes);
+            
+            // Draw QR code
+            page.drawImage(qrImage, {
+                x: x + 10,
+                y: y - 20,
+                width: qrSize,
+                height: qrSize,
+            });
+            
+            // Draw team/student name
+            const displayName = studentNames.length > 25 ? studentNames.substring(0, 25) + '...' : studentNames;
+            page.drawText(displayName, {
+                x: x,
+                y: y - qrSize - 25,
+                size: 10,
+                font: font,
+                color: rgb(0, 0, 0),
+            });
+            
+            // Draw grade
+            page.drawText(`Gr ${group.grade}${group.division ? '-' + group.division : ''}`, {
+                x: x + qrSize - 30,
+                y: y - 15,
+                size: 8,
+                font: font,
+                color: rgb(0.4, 0.4, 0.4),
+            });
+            
+            // Move to next position
+            x += qrSize + spacing + 30;
+            count++;
+            
+            // Check if we need a new row or page
+            if (count % colsPerRow === 0) {
+                x = 30;
+                y -= qrSize + labelHeight + spacing;
+            }
+            
+            // Check if we need a new page
+            if (y < 50) {
+                page = pdfDoc.addPage([pageWidth, pageHeight]);
+                x = 30;
+                y = pageHeight - 50;
+            }
+        }
+        
+        // Save PDF
+        const pdfBytes = await pdfDoc.save();
+        
+        // Upload to Cloudinary
+        const uploadResult = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                {
+                    resource_type: 'raw',
+                    public_id: `qr-codes/all-qr-codes-${Date.now()}`,
+                    folder: 'qr-codes'
+                },
+                (error, result) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                }
+            ).end(pdfBytes);
+        });
+        
+        res.json({
+            success: true,
+            message: `QR Codes exported for ${result.rows.length} projects`,
+            data: {
+                url: uploadResult.secure_url,
+                total: result.rows.length
+            }
+        });
+        
+    } catch (error) {
+        console.error('Export QR Codes Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to export QR codes: ' + error.message
+        });
+    }
+});
+
 // Get All Teachers
 router.get('/teachers', authenticateAdmin, async (req, res) => {
     try {

@@ -642,7 +642,37 @@ const AdminDashboard = () => {
                     ))}
                 </div>
             </div>
+                // Add this button in the admin dashboard header
+<button
+    onClick={exportQRCodes}
+    className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 flex items-center gap-2"
+>
+    📱 Export QR Codes
+</button>
 
+// Add this function
+const exportQRCodes = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        toast.loading('Generating QR code PDF...');
+        
+        const response = await axios.get(
+            `${API_URL}/api/admin/export-qr-codes`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        if (response.data.success) {
+            toast.dismiss();
+            toast.success('QR Codes PDF ready!');
+            // Open the PDF in new tab
+            window.open(response.data.data.url, '_blank');
+        }
+    } catch (error) {
+        toast.dismiss();
+        toast.error('Failed to generate QR codes');
+        console.error(error);
+    }
+};
             {/* Export Modal */}
             {showExportModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
