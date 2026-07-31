@@ -154,7 +154,7 @@ router.get('/export-qr-codes', authenticateAdmin, async (req, res) => {
     try {
         console.log('📱 Exporting all QR codes...');
         
-        // Get all groups with QR codes
+        // Get all groups with QR codes, ordered by grade
         const result = await pool.query(
             `SELECT 
                 g.id,
@@ -166,7 +166,7 @@ router.get('/export-qr-codes', authenticateAdmin, async (req, res) => {
                 g.qr_code
              FROM groups g
              WHERE g.qr_code IS NOT NULL
-             ORDER BY g.grade, g.division`
+             ORDER BY g.grade, g.division, g.team_name`
         );
         
         if (result.rows.length === 0) {
@@ -178,7 +178,6 @@ router.get('/export-qr-codes', authenticateAdmin, async (req, res) => {
         
         // Generate PDF with QR codes
         const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
-        const QRCode = require('qrcode');
         const cloudinary = require('cloudinary').v2;
         
         const pdfDoc = await PDFDocument.create();
@@ -186,18 +185,48 @@ router.get('/export-qr-codes', authenticateAdmin, async (req, res) => {
         const pageHeight = 842; // A4 height in points
         let page = pdfDoc.addPage([pageWidth, pageHeight]);
         
-        let x = 30;
-        let y = pageHeight - 50;
-        const labelHeight = 80;
-        const qrSize = 100;
-        const spacing = 20;
-        const colsPerRow = 4;
-        let count = 0;
-        
         // Load font
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        
+        // Box dimensions
+        const boxWidth = 125;
+        const boxHeight = 160;
+        const qrSize = 80;
+        const marginX = 25;
+        const marginY = 30;
+        const spacingX = 10;
+        const spacingY = 15;
+        const colsPerRow = 4;
+        
+        let col = 0;
+        let row = 0;
+        let currentGrade = null;
+        let gradeY = pageHeight - 20;
         
         for (const group of result.rows) {
+            // Check if we need a new page
+            if (row > 0 && row % 6 === 0) {
+                page = pdfDoc.addPage([pageWidth, pageHeight]);
+                col = 0;
+                row = 0;
+                currentGrade = null;
+            }
+            
+            // Calculate position
+            const x = marginX + col * (boxWidth + spacingX);
+            const y = pageHeight - marginY - row * (boxHeight + spacingY) - boxHeight;
+            
+            // Draw box border
+            page.drawRectangle({
+                x: x,
+                y: y,
+                width: boxWidth,
+                height: boxHeight,
+                borderColor: rgb(0.8, 0.8, 0.8),
+                borderWidth: 1,
+            });
+            
             // Parse students
             let students = group.students_data;
             if (typeof students === 'string') {
@@ -207,61 +236,69 @@ router.get('/export-qr-codes', authenticateAdmin, async (req, res) => {
                 students = [];
             }
             
+            // Get student names
             const studentNames = students.map(s => 
                 `${s.firstName || ''} ${s.lastName || ''}`.trim()
-            ).join(', ') || group.team_name || 'Unknown';
+            ).filter(Boolean).join(', ') || group.team_name || 'Unknown';
             
-            // Generate QR code as image
-            const qrDataUrl = group.qr_code || await QRCode.toDataURL(
-                `${process.env.APP_URL || 'https://science-fair-app.vercel.app'}/project/${group.registration_code}`
-            );
+            // Get QR code
+            let qrDataUrl = group.qr_code;
+            if (!qrDataUrl) {
+                const QRCode = require('qrcode');
+                qrDataUrl = await QRCode.toDataURL(
+                    `${process.env.APP_URL || 'https://science-fair-app.vercel.app'}/project/${group.registration_code}`
+                );
+            }
             
-            // Convert base64 to image
+            // Embed QR code image
             const qrImageBytes = Buffer.from(qrDataUrl.split(',')[1], 'base64');
             const qrImage = await pdfDoc.embedPng(qrImageBytes);
             
-            // Draw QR code
+            // Draw QR code centered
+            const qrX = x + (boxWidth - qrSize) / 2;
+            const qrY = y + boxHeight - qrSize - 25;
             page.drawImage(qrImage, {
-                x: x + 10,
-                y: y - 20,
+                x: qrX,
+                y: qrY,
                 width: qrSize,
                 height: qrSize,
             });
             
-            // Draw team/student name
-            const displayName = studentNames.length > 25 ? studentNames.substring(0, 25) + '...' : studentNames;
+            // Draw student name (truncate if too long)
+            const displayName = studentNames.length > 18 ? studentNames.substring(0, 18) + '...' : studentNames;
             page.drawText(displayName, {
-                x: x,
-                y: y - qrSize - 25,
-                size: 10,
-                font: font,
+                x: x + 5,
+                y: y + 30,
+                size: 9,
+                font: boldFont,
                 color: rgb(0, 0, 0),
             });
             
-            // Draw grade
-            page.drawText(`Gr ${group.grade}${group.division ? '-' + group.division : ''}`, {
-                x: x + qrSize - 30,
-                y: y - 15,
+            // Draw class info
+            const classText = `Class: ${group.grade}${group.division ? '-' + group.division : ''}`;
+            page.drawText(classText, {
+                x: x + 5,
+                y: y + 18,
                 size: 8,
+                font: font,
+                color: rgb(0.3, 0.3, 0.3),
+            });
+            
+            // Draw registration code
+            const codeText = `Code: ${group.registration_code}`;
+            page.drawText(codeText, {
+                x: x + 5,
+                y: y + 6,
+                size: 7,
                 font: font,
                 color: rgb(0.4, 0.4, 0.4),
             });
             
             // Move to next position
-            x += qrSize + spacing + 30;
-            count++;
-            
-            // Check if we need a new row or page
-            if (count % colsPerRow === 0) {
-                x = 30;
-                y -= qrSize + labelHeight + spacing;
-            }
-            
-            // Check if we need a new page
-            if (y < 50) {
-                page = pdfDoc.addPage([pageWidth, pageHeight]);
-                x = 30;
-                y = pageHeight - 50;
+            col++;
+            if (col >= colsPerRow) {
+                col = 0;
+                row++;
             }
         }
         
