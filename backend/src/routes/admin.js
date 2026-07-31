@@ -185,35 +185,35 @@ router.get('/export-qr-codes', authenticateAdmin, async (req, res) => {
         const pageHeight = 842; // A4 height in points
         let page = pdfDoc.addPage([pageWidth, pageHeight]);
         
-        // Load font
+        // Load fonts
         const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
         
-        // Box dimensions
+        // Box dimensions - 4 columns, 4 rows per page
+        const colsPerRow = 4;
+        const rowsPerPage = 4;
         const boxWidth = 125;
-        const boxHeight = 160;
-        const qrSize = 80;
-        const marginX = 25;
+        const boxHeight = 150;
+        const qrSize = 75;
+        const marginX = 20;
         const marginY = 30;
         const spacingX = 10;
-        const spacingY = 15;
-        const colsPerRow = 4;
+        const spacingY = 12;
         
-        let col = 0;
-        let row = 0;
-        let currentGrade = null;
-        let gradeY = pageHeight - 20;
+        let boxIndex = 0;
+        let totalBoxes = 0;
         
         for (const group of result.rows) {
             // Check if we need a new page
-            if (row > 0 && row % 6 === 0) {
+            if (boxIndex > 0 && boxIndex % (colsPerRow * rowsPerPage) === 0) {
                 page = pdfDoc.addPage([pageWidth, pageHeight]);
-                col = 0;
-                row = 0;
-                currentGrade = null;
+                totalBoxes = 0;
             }
             
-            // Calculate position
+            // Calculate position (4 columns, 4 rows)
+            const col = boxIndex % colsPerRow;
+            const row = Math.floor((boxIndex % (colsPerRow * rowsPerPage)) / colsPerRow);
+            
             const x = marginX + col * (boxWidth + spacingX);
             const y = pageHeight - marginY - row * (boxHeight + spacingY) - boxHeight;
             
@@ -223,7 +223,7 @@ router.get('/export-qr-codes', authenticateAdmin, async (req, res) => {
                 y: y,
                 width: boxWidth,
                 height: boxHeight,
-                borderColor: rgb(0.8, 0.8, 0.8),
+                borderColor: rgb(0.7, 0.7, 0.7),
                 borderWidth: 1,
             });
             
@@ -256,7 +256,7 @@ router.get('/export-qr-codes', authenticateAdmin, async (req, res) => {
             
             // Draw QR code centered
             const qrX = x + (boxWidth - qrSize) / 2;
-            const qrY = y + boxHeight - qrSize - 25;
+            const qrY = y + boxHeight - qrSize - 30;
             page.drawImage(qrImage, {
                 x: qrX,
                 y: qrY,
@@ -265,11 +265,11 @@ router.get('/export-qr-codes', authenticateAdmin, async (req, res) => {
             });
             
             // Draw student name (truncate if too long)
-            const displayName = studentNames.length > 18 ? studentNames.substring(0, 18) + '...' : studentNames;
+            const displayName = studentNames.length > 20 ? studentNames.substring(0, 20) + '...' : studentNames;
             page.drawText(displayName, {
-                x: x + 5,
-                y: y + 30,
-                size: 9,
+                x: x + 4,
+                y: y + 28,
+                size: 8,
                 font: boldFont,
                 color: rgb(0, 0, 0),
             });
@@ -277,29 +277,25 @@ router.get('/export-qr-codes', authenticateAdmin, async (req, res) => {
             // Draw class info
             const classText = `Class: ${group.grade}${group.division ? '-' + group.division : ''}`;
             page.drawText(classText, {
-                x: x + 5,
-                y: y + 18,
-                size: 8,
+                x: x + 4,
+                y: y + 17,
+                size: 7,
                 font: font,
                 color: rgb(0.3, 0.3, 0.3),
             });
             
-            // Draw registration code
-            const codeText = `Code: ${group.registration_code}`;
+            // Draw registration code (smaller font)
+            const codeText = `${group.registration_code}`;
             page.drawText(codeText, {
-                x: x + 5,
+                x: x + 4,
                 y: y + 6,
-                size: 7,
+                size: 6,
                 font: font,
                 color: rgb(0.4, 0.4, 0.4),
             });
             
-            // Move to next position
-            col++;
-            if (col >= colsPerRow) {
-                col = 0;
-                row++;
-            }
+            boxIndex++;
+            totalBoxes++;
         }
         
         // Save PDF
