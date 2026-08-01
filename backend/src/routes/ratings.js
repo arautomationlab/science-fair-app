@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 
-// Check if ratings are open
-function isRatingOpen() {
+// ✅ Check if ratings are open (time-based)
+function isTimeBasedRatingOpen() {
     const fairDate = process.env.FAIR_DATE || '2026-08-01';
     const startTime = process.env.FAIR_START_TIME || '09:00';
     const endTime = process.env.FAIR_END_TIME || '16:00';
@@ -15,14 +15,33 @@ function isRatingOpen() {
     return now >= fairStart && now <= fairEnd;
 }
 
+// ✅ Check if ratings are open (with database override)
+async function isRatingOpen() {
+    // 1. Check if there's a manual override in settings
+    const result = await pool.query(
+        'SELECT value FROM settings WHERE key = $1',
+        ['ratings_open']
+    );
+    
+    if (result.rows.length > 0) {
+        const manualOverride = result.rows[0].value;
+        if (manualOverride === 'true') return true;
+        if (manualOverride === 'false') return false;
+    }
+    
+    // 2. Fallback to time-based check
+    return isTimeBasedRatingOpen();
+}
+
 // Submit Parent Rating
 router.post('/rate', async (req, res) => {
     try {
-        // ✅ Check if ratings are open
-        if (!isRatingOpen()) {
+        // ✅ Check if ratings are open (with override support)
+        const open = await isRatingOpen();
+        if (!open) {
             return res.status(403).json({
                 success: false,
-                message: 'Parent ratings are only available during the Science Fair (9:00 AM - 5:00 PM). Please visit us on the fair day!'
+                message: 'Parent ratings are only available during the Science Fair (9:00 AM - 4:00 PM). Please visit us on the fair day!'
             });
         }
 
@@ -79,22 +98,30 @@ router.post('/rate', async (req, res) => {
 });
 
 // Get rating status
-router.get('/status', (req, res) => {
-    const isOpen = isRatingOpen();
-    const fairDate = process.env.FAIR_DATE || '2026-08-01';
-    const startTime = process.env.FAIR_START_TIME || '09:00';
-    const endTime = process.env.FAIR_END_TIME || '16:00';
-    
-    res.json({
-        success: true,
-        data: {
-            isOpen: isOpen,
-            message: isOpen ? 'Ratings are now open!' : `Ratings will open on ${fairDate} at ${startTime} AM`,
-            fairDate: fairDate,
-            startTime: startTime,
-            endTime: endTime
-        }
-    });
+router.get('/status', async (req, res) => {
+    try {
+        const open = await isRatingOpen();
+        const fairDate = process.env.FAIR_DATE || '2026-08-01';
+        const startTime = process.env.FAIR_START_TIME || '09:00';
+        const endTime = process.env.FAIR_END_TIME || '16:00';
+        
+        res.json({
+            success: true,
+            data: {
+                isOpen: open,
+                message: open ? 'Ratings are now open! 🌟' : `Ratings will open on ${fairDate} at ${startTime} AM`,
+                fairDate: fairDate,
+                startTime: startTime,
+                endTime: endTime
+            }
+        });
+    } catch (error) {
+        console.error('Rating Status Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get rating status'
+        });
+    }
 });
 
 module.exports = router;
