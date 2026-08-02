@@ -166,25 +166,30 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
         }
         
         // ✅ Upload to Cloudinary with PUBLIC access
-        const uploadResult = await new Promise((resolve, reject) => {
-            cloudinary.uploader.upload_stream(
-                {
-                    resource_type: "auto",
-                    public_id: `certificates/${registration_code}`,
-                    format: "pdf",
-                    type: "upload", // ✅ Makes file publicly accessible
-                    overwrite: true,
-                    invalidate: true,
-                    use_filename: true,
-                    unique_filename: false,
-                    filename_override: `${registration_code}.pdf`
-                },
-                (error, result) => {
-                    if (error) reject(error);
-                    else resolve(result);
-                }
-            ).end(finalPdf);
-        });
+        // Upload to Cloudinary
+const uploadResult = await new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+        {
+            resource_type: "raw",
+            public_id: `certificates/${registration_code}`,
+            format: "pdf",
+            overwrite: true,
+            invalidate: true
+        },
+        (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+        }
+    ).end(finalPdf);
+});
+
+// ✅ Force download with attachment flag
+let pdfUrl = uploadResult.secure_url;
+if (!pdfUrl.endsWith('.pdf')) {
+    pdfUrl = pdfUrl + '.pdf';
+}
+// ✅ This forces the browser to download instead of display
+pdfUrl = pdfUrl + '?fl_attachment=true';
         
         // Ensure .pdf extension
         let pdfUrl = uploadResult.secure_url;
