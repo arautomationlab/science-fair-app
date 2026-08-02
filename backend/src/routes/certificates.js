@@ -6,7 +6,7 @@ const { pool } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const fontkit = require('fontkit');
-const axios = require('axios'); // ✅ Changed from fetch to axios
+const axios = require('axios');
 const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 const path = require('path');
@@ -31,7 +31,7 @@ function areCertificatesAvailable() {
 }
 
 // Generate single certificate page
-async function generateCertificatePage(student, group, font) {
+async function generateCertificatePage(student, group, font, boldFont) {
     const pageWidth = 1200;
     const pageHeight = 848;
     
@@ -53,24 +53,24 @@ async function generateCertificatePage(student, group, font) {
         height: pageHeight,
     });
     
-    // ✅ Student Name
+    // ✅ Student Name - BOLD + PURPLE
     const studentName = `${student.firstName || ''} ${student.middleName || ''} ${student.lastName || ''}`.trim() || '_________________';
     page.drawText(studentName, {
-        x: 400,
-        y: 430,
-        size: 34,
-        font: font,
-        color: rgb(0.1, 0.1, 0.1),
+        x: 380,
+        y: 435,
+        size: 36,
+        font: boldFont,
+        color: rgb(0.5, 0.1, 0.8), // Purple color
     });
     
-    // ✅ Grade
+    // ✅ Grade - BOLD + PURPLE
     const gradeText = `${group.grade} - ${group.division}`;
     page.drawText(gradeText, {
-        x: 550,
-        y: 370,
+        x: 480,
+        y: 385,
         size: 28,
-        font: font,
-        color: rgb(0.1, 0.1, 0.1),
+        font: boldFont,
+        color: rgb(0.5, 0.1, 0.8), // Purple color
     });
     
     return await pdfDoc.save();
@@ -124,25 +124,31 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             });
         }
         
-        // Load font
+        // ✅ Load fonts (regular + bold)
         const fontPath = path.join(__dirname, '../../fonts/times.ttf');
-        let font;
+        const boldFontPath = path.join(__dirname, '../../fonts/timesbd.ttf');
+        let font, boldFont;
+        
         try {
+            // Try to load custom fonts
             const fontBytes = fs.readFileSync(fontPath);
+            const boldFontBytes = fs.readFileSync(boldFontPath);
             const pdfDoc = await PDFDocument.create();
             pdfDoc.registerFontkit(fontkit);
             font = await pdfDoc.embedFont(fontBytes);
+            boldFont = await pdfDoc.embedFont(boldFontBytes);
         } catch (error) {
-            // Fallback to built-in font
+            // Fallback to built-in fonts
             const pdfDoc = await PDFDocument.create();
             pdfDoc.registerFontkit(fontkit);
             font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+            boldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
         }
         
         // ✅ Generate one PDF per student
         const allPdfPages = [];
         for (const student of students) {
-            const pdfBytes = await generateCertificatePage(student, group, font);
+            const pdfBytes = await generateCertificatePage(student, group, font, boldFont);
             allPdfPages.push(pdfBytes);
         }
         
