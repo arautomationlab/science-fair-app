@@ -12,13 +12,13 @@ const path = require('path');
 
 router.get('/version', (req, res) => {
     res.json({
-        version: "CERTIFICATE VERSION 13 - DIRECT DOWNLOAD",
+        version: "CERTIFICATE VERSION 14 - ITALIANNO FONT",
         time: new Date(),
-        message: "Direct PDF download without Cloudinary"
+        message: "Direct PDF download with Italianno calligraphy font"
     });
 });
 
-console.log('✅ LOADING CERTIFICATES.JS - VERSION 13 (DIRECT DOWNLOAD)');
+console.log('✅ LOADING CERTIFICATES.JS - VERSION 14 (ITALIANNO FONT)');
 
 // Certificate Template URL
 const TEMPLATE_URL = process.env.CERTIFICATE_TEMPLATE_URL || 'https://res.cloudinary.com/zr8wz6c7/image/upload/v1785430786/WhatsApp_Image_2026-07-30_at_12.31.27_PM_memtfi.jpg';
@@ -55,36 +55,44 @@ async function generateCertificatePage(student, group) {
         height: pageHeight,
     });
     
-    // Load bold font
-    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    // ✅ Load Italianno Calligraphy Font
+    const fontPath = path.join(__dirname, '../../fonts/Italianno-Regular.ttf');
+    let calligraphyFont;
+    try {
+        const fontBytes = fs.readFileSync(fontPath);
+        const pdfDoc = await PDFDocument.create();
+        pdfDoc.registerFontkit(fontkit);
+        calligraphyFont = await pdfDoc.embedFont(fontBytes);
+        console.log('✅ Italianno font loaded successfully!');
+    } catch (error) {
+        console.log('⚠️ Italianno font not found, using fallback');
+        // Fallback to Helvetica Bold
+        calligraphyFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    }
     
-    // ✅ Student Name - BOLD + PURPLE
-    // From 460 to 540 (8 letters RIGHT = +80px)
-    // From 480 to 525 (1.5 lines UP = +45px)
+    // ✅ Student Name - ITALIANNO + PURPLE (SAME POSITIONS)
     const studentName = `${student.firstName || ''} ${student.middleName || ''} ${student.lastName || ''}`.trim() || '_________________';
     console.log('📝 Student Name:', studentName);
     
     page.drawText(studentName, {
-        x: 550,   // ✅ 8 letters RIGHT from 460
-        y: 500,   // ✅ 1.5 lines UP from 480
-        size: 38,
-        font: boldFont,
+        x: 550,   // ✅ SAME POSITION
+        y: 500,   // ✅ SAME POSITION
+        size: 44, // ✅ Slightly larger for calligraphy font
+        font: calligraphyFont,
         color: rgb(0.6, 0.1, 0.9),
     });
     
-    // ✅ Grade - BOLD + PURPLE
-    // From 400 to 300 (10 letters LEFT = -100px)
-    // From 430 to 475 (1.5 lines UP = +45px)
+    // ✅ Grade - ITALIANNO + PURPLE (SAME POSITIONS)
     const gradeText = `${group.grade} - ${group.division}`;
     page.drawText(gradeText, {
-        x: 280,   // ✅ 10 letters LEFT from 400
-        y: 450,   // ✅ 1.5 lines UP from 430
-        size: 30,
-        font: boldFont,
+        x: 280,   // ✅ SAME POSITION
+        y: 450,   // ✅ SAME POSITION
+        size: 36, // ✅ Slightly larger for calligraphy font
+        font: calligraphyFont,
         color: rgb(0.6, 0.1, 0.9),
     });
     
-    console.log('✅ Certificate page generated with bold purple text');
+    console.log('✅ Certificate page generated with Italianno font');
     
     return await pdfDoc.save();
 }
