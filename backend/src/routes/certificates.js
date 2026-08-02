@@ -58,23 +58,27 @@ async function generateCertificatePage(student, group) {
     // Load bold font
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     
-    // ✅ Student Name - BOLD + PURPLE (MOVED UP 1.5 LINES + RIGHT 8 LETTERS)
+    // ✅ Student Name - BOLD + PURPLE
+    // 1.5 lines UP = +45px (from 435 to 480)
+    // 8 letter spaces RIGHT = +80px (from 380 to 460)
     const studentName = `${student.firstName || ''} ${student.middleName || ''} ${student.lastName || ''}`.trim() || '_________________';
     console.log('📝 Student Name:', studentName);
     
     page.drawText(studentName, {
-        x: 380 + 80,  // ✅ 8 letter spaces RIGHT (approx 80px)
-        y: 435 + 45,  // ✅ 1.5 lines UP (45px)
+        x: 460,   // ✅ 8 letter spaces RIGHT (380 + 80)
+        y: 480,   // ✅ 1.5 lines UP (435 + 45)
         size: 38,
         font: boldFont,
         color: rgb(0.6, 0.1, 0.9),
     });
     
-    // ✅ Grade - BOLD + PURPLE (MOVED UP 1.5 LINES + LEFT 10 LETTERS)
+    // ✅ Grade - BOLD + PURPLE
+    // 1.5 lines UP = +45px (from 385 to 430)
+    // 10 letter spaces LEFT = -100px (from 500 to 400)
     const gradeText = `${group.grade} - ${group.division}`;
     page.drawText(gradeText, {
-        x: 500 - 100, // ✅ 10 letter spaces LEFT (100px)
-        y: 385 + 45,  // ✅ 1.5 lines UP (45px)
+        x: 400,   // ✅ 10 letter spaces LEFT (500 - 100)
+        y: 430,   // ✅ 1.5 lines UP (385 + 45)
         size: 30,
         font: boldFont,
         color: rgb(0.6, 0.1, 0.9),
