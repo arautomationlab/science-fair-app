@@ -169,7 +169,7 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
         const uploadResult = await new Promise((resolve, reject) => {
             cloudinary.uploader.upload_stream(
                 {
-                    resource_type: "raw",
+                    resource_type: "auto",
                     public_id: `certificates/${registration_code}`,
                     format: "pdf",
                     type: "upload", // ✅ Makes file publicly accessible
