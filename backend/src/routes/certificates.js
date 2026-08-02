@@ -10,6 +10,8 @@ const axios = require('axios');
 const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 const path = require('path');
+
+// ✅ DEBUG: Confirm file is loaded
 console.log('✅ LOADING CERTIFICATES.JS - VERSION WITH BOLD PURPLE - FORCE UPDATE');
 
 // Cloudinary Config
@@ -59,10 +61,14 @@ async function generateCertificatePage(student, group) {
     
     // ✅ Student Name - BOLD + PURPLE
     const studentName = `${student.firstName || ''} ${student.middleName || ''} ${student.lastName || ''}`.trim() || '_________________';
+    
+    // ✅ DEBUG: Log the student name
+    console.log('📝 Student Name:', studentName);
+    
     page.drawText(studentName, {
         x: 380,
         y: 435,
-        size: 36,
+        size: 38,
         font: boldFont,
         color: rgb(0.6, 0.1, 0.9), // Bright Purple
     });
@@ -72,10 +78,12 @@ async function generateCertificatePage(student, group) {
     page.drawText(gradeText, {
         x: 500,
         y: 385,
-        size: 28,
+        size: 30,
         font: boldFont,
         color: rgb(0.6, 0.1, 0.9), // Bright Purple
     });
+    
+    console.log('✅ Certificate page generated with bold purple text');
     
     return await pdfDoc.save();
 }
@@ -165,7 +173,7 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             ).end(finalPdf);
         });
         
-        // ✅ Ensure .pdf extension
+        // Ensure .pdf extension
         let pdfUrl = uploadResult.secure_url;
         if (!pdfUrl.endsWith('.pdf')) {
             pdfUrl = pdfUrl + '.pdf';
@@ -244,4 +252,4 @@ router.get('/status', async (req, res) => {
     }
 });
 
-module.exports = router;// FORCE UPDATE - Bold purple certificate 
+module.exports = router;
