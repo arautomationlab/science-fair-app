@@ -13,14 +13,14 @@ const path = require('path');
 
 router.get('/version', (req, res) => {
     res.json({
-        version: "CERTIFICATE VERSION 10",
+        version: "CERTIFICATE VERSION 11",
         time: new Date(),
-        message: "This is the latest certificates.js"
+        message: "This is the latest certificates.js with public Cloudinary access"
     });
 });
 
 // ✅ DEBUG: Confirm file is loaded
-console.log('✅ LOADING CERTIFICATES.JS - VERSION WITH BOLD PURPLE - FORCE UPDATE');
+console.log('✅ LOADING CERTIFICATES.JS - VERSION WITH PUBLIC ACCESS');
 
 // Cloudinary Config
 cloudinary.config({
@@ -165,14 +165,19 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             finalPdf = await mergedPdf.save();
         }
         
-        // Upload to Cloudinary with .pdf extension
+        // ✅ Upload to Cloudinary with PUBLIC access
         const uploadResult = await new Promise((resolve, reject) => {
             cloudinary.uploader.upload_stream(
                 {
-                    resource_type: 'raw',
+                    resource_type: "raw",
                     public_id: `certificates/${registration_code}`,
-                    folder: 'certificates',
-                    format: 'pdf'
+                    format: "pdf",
+                    type: "upload", // ✅ Makes file publicly accessible
+                    overwrite: true,
+                    invalidate: true,
+                    use_filename: true,
+                    unique_filename: false,
+                    filename_override: `${registration_code}.pdf`
                 },
                 (error, result) => {
                     if (error) reject(error);
