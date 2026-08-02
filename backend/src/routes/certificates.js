@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
-const { PDFDocument, rgb } = require('pdf-lib');
+const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const fontkit = require('fontkit');
 const fetch = require('node-fetch');
 const cloudinary = require('cloudinary').v2;
@@ -138,7 +138,7 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             // Fallback to built-in font
             const pdfDoc = await PDFDocument.create();
             pdfDoc.registerFontkit(fontkit);
-            font = await pdfDoc.embedFont(PDFDocument.StandardFonts.TimesRoman);
+            font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
         }
         
         // ✅ Generate one PDF per student
