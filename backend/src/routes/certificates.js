@@ -77,7 +77,7 @@ async function generateCertificatePage(student, group) {
     page.drawText(studentName, {
         x: 550,   // ✅ SAME POSITION
         y: 500,   // ✅ SAME POSITION
-        size: 44, // ✅ Slightly larger for calligraphy font
+        size: 38, // ✅ Slightly larger for calligraphy font
         font: calligraphyFont,
         color: rgb(0.6, 0.1, 0.9),
     });
