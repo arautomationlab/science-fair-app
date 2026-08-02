@@ -10,6 +10,7 @@ const axios = require('axios');
 const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 const path = require('path');
+console.log('✅ LOADING CERTIFICATES.JS - VERSION WITH BOLD PURPLE - FORCE UPDATE');
 
 // Cloudinary Config
 cloudinary.config({
