@@ -53,13 +53,13 @@ async function generateCertificatePage(student, group) {
         height: pageHeight,
     });
     
-    // ✅ Load built-in bold font directly (no external file needed)
+    // ✅ Load bold font
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     
     // ✅ Student Name - BOLD + PURPLE
     const studentName = `${student.firstName || ''} ${student.middleName || ''} ${student.lastName || ''}`.trim() || '_________________';
     page.drawText(studentName, {
-        x: 350,
+        x: 380,
         y: 435,
         size: 36,
         font: boldFont,
@@ -69,7 +69,7 @@ async function generateCertificatePage(student, group) {
     // ✅ Grade - BOLD + PURPLE
     const gradeText = `${group.grade} - ${group.division}`;
     page.drawText(gradeText, {
-        x: 480,
+        x: 500,
         y: 385,
         size: 28,
         font: boldFont,
@@ -127,14 +127,14 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             });
         }
         
-        // ✅ Generate one PDF per student
+        // Generate one PDF per student
         const allPdfPages = [];
         for (const student of students) {
             const pdfBytes = await generateCertificatePage(student, group);
             allPdfPages.push(pdfBytes);
         }
         
-        // ✅ Merge all PDFs into one file
+        // Merge all PDFs into one file
         let finalPdf;
         if (allPdfPages.length === 1) {
             finalPdf = allPdfPages[0];
@@ -148,14 +148,14 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             finalPdf = await mergedPdf.save();
         }
         
-        // ✅ Upload to Cloudinary with .pdf extension
+        // Upload to Cloudinary with .pdf extension
         const uploadResult = await new Promise((resolve, reject) => {
             cloudinary.uploader.upload_stream(
                 {
                     resource_type: 'raw',
                     public_id: `certificates/${registration_code}`,
                     folder: 'certificates',
-                    format: 'pdf' // ✅ Force PDF format
+                    format: 'pdf'
                 },
                 (error, result) => {
                     if (error) reject(error);
@@ -164,7 +164,7 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             ).end(finalPdf);
         });
         
-        // ✅ Save URL with .pdf extension
+        // ✅ Ensure .pdf extension
         let pdfUrl = uploadResult.secure_url;
         if (!pdfUrl.endsWith('.pdf')) {
             pdfUrl = pdfUrl + '.pdf';
