@@ -7,26 +7,18 @@ const { authenticate } = require('../middleware/auth');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const fontkit = require('fontkit');
 const axios = require('axios');
-const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 const path = require('path');
 
 router.get('/version', (req, res) => {
     res.json({
-        version: "CERTIFICATE VERSION 12",
+        version: "CERTIFICATE VERSION 13 - DIRECT DOWNLOAD",
         time: new Date(),
-        message: "Fixed duplicate pdfUrl and added download flag"
+        message: "Direct PDF download without Cloudinary"
     });
 });
 
-console.log('✅ LOADING CERTIFICATES.JS - VERSION 12');
-
-// Cloudinary Config
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-});
+console.log('✅ LOADING CERTIFICATES.JS - VERSION 13 (DIRECT DOWNLOAD)');
 
 // Certificate Template URL
 const TEMPLATE_URL = process.env.CERTIFICATE_TEMPLATE_URL || 'https://res.cloudinary.com/zr8wz6c7/image/upload/v1785430786/WhatsApp_Image_2026-07-30_at_12.31.27_PM_memtfi.jpg';
@@ -50,10 +42,12 @@ async function generateCertificatePage(student, group) {
     
     const page = pdfDoc.addPage([pageWidth, pageHeight]);
     
+    // Download template image using axios
     const imageResponse = await axios.get(TEMPLATE_URL, { responseType: 'arraybuffer' });
     const imageBytes = imageResponse.data;
     const image = await pdfDoc.embedJpg(imageBytes);
     
+    // Draw template image as background
     page.drawImage(image, {
         x: 0,
         y: 0,
@@ -61,8 +55,10 @@ async function generateCertificatePage(student, group) {
         height: pageHeight,
     });
     
+    // Load bold font
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     
+    // Student Name - BOLD + PURPLE
     const studentName = `${student.firstName || ''} ${student.middleName || ''} ${student.lastName || ''}`.trim() || '_________________';
     console.log('📝 Student Name:', studentName);
     
@@ -74,6 +70,7 @@ async function generateCertificatePage(student, group) {
         color: rgb(0.6, 0.1, 0.9),
     });
     
+    // Grade - BOLD + PURPLE
     const gradeText = `${group.grade} - ${group.division}`;
     page.drawText(gradeText, {
         x: 500,
@@ -102,6 +99,7 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             });
         }
         
+        // Get group data
         const groupResult = await pool.query(
             `SELECT g.id, g.registration_code, g.grade, g.division, 
                     g.team_name, g.students_data, g.certificate_url
@@ -119,6 +117,7 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
         
         const group = groupResult.rows[0];
         
+        // Parse students
         let students = group.students_data;
         if (typeof students === 'string') {
             students = JSON.parse(students);
@@ -134,12 +133,14 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             });
         }
         
+        // Generate one PDF per student
         const allPdfPages = [];
         for (const student of students) {
             const pdfBytes = await generateCertificatePage(student, group);
             allPdfPages.push(pdfBytes);
         }
         
+        // Merge all PDFs into one file
         let finalPdf;
         if (allPdfPages.length === 1) {
             finalPdf = allPdfPages[0];
@@ -153,54 +154,107 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             finalPdf = await mergedPdf.save();
         }
         
-        // Upload to Cloudinary
-        const uploadResult = await new Promise((resolve, reject) => {
-            cloudinary.uploader.upload_stream(
-                {
-                    resource_type: "raw",
-                    public_id: `certificates/${registration_code}`,
-                    format: "pdf",
-                    overwrite: true,
-                    invalidate: true
-                },
-                (error, result) => {
-                    if (error) reject(error);
-                    else resolve(result);
-                }
-            ).end(finalPdf);
-        });
+        // ✅ DIRECT DOWNLOAD - No Cloudinary
+        const pdfBuffer = Buffer.from(finalPdf);
         
-        // ✅ SINGLE pdfUrl with download flag (FIXED)
-        let pdfUrl = uploadResult.secure_url;
-        if (!pdfUrl.endsWith('.pdf')) {
-            pdfUrl = pdfUrl + '.pdf';
-        }
-        // Force download
-        pdfUrl = pdfUrl + '?fl_attachment=true';
-        
+        // Save URL to database (local reference)
+        const pdfUrl = `/api/certificates/download/${registration_code}`;
         await pool.query(
             `UPDATE groups SET certificate_url = $1 WHERE registration_code = $2`,
             [pdfUrl, registration_code.toUpperCase()]
         );
         
         console.log(`✅ Certificate generated for: ${registration_code} (${students.length} students)`);
-        console.log(`📎 URL: ${pdfUrl}`);
+        console.log(`📎 Download URL: ${pdfUrl}`);
         
-        res.json({
-            success: true,
-            message: `Certificate generated successfully for ${students.length} student(s)! 🎉`,
-            data: {
-                certificate_url: pdfUrl,
-                student_count: students.length,
-                pages: students.length
-            }
-        });
+        // ✅ Return the PDF directly
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${registration_code}.pdf"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
         
     } catch (error) {
         console.error('Certificate Error:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to generate certificate: ' + error.message
+        });
+    }
+});
+
+// ==================== DOWNLOAD CERTIFICATE ====================
+router.get('/download/:registration_code', authenticate, async (req, res) => {
+    try {
+        const { registration_code } = req.params;
+        console.log('📥 Downloading certificate for:', registration_code);
+        
+        // Get group data
+        const groupResult = await pool.query(
+            `SELECT g.id, g.registration_code, g.grade, g.division, 
+                    g.team_name, g.students_data, g.certificate_url
+             FROM groups g
+             WHERE g.registration_code = $1`,
+            [registration_code.toUpperCase()]
+        );
+        
+        if (groupResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Group not found'
+            });
+        }
+        
+        const group = groupResult.rows[0];
+        
+        // Parse students
+        let students = group.students_data;
+        if (typeof students === 'string') {
+            students = JSON.parse(students);
+        }
+        if (!Array.isArray(students)) {
+            students = [];
+        }
+        
+        if (students.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No students found in this group'
+            });
+        }
+        
+        // Generate one PDF per student
+        const allPdfPages = [];
+        for (const student of students) {
+            const pdfBytes = await generateCertificatePage(student, group);
+            allPdfPages.push(pdfBytes);
+        }
+        
+        // Merge all PDFs into one file
+        let finalPdf;
+        if (allPdfPages.length === 1) {
+            finalPdf = allPdfPages[0];
+        } else {
+            const mergedPdf = await PDFDocument.create();
+            for (const pdfBytes of allPdfPages) {
+                const pdf = await PDFDocument.load(pdfBytes);
+                const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                copiedPages.forEach(page => mergedPdf.addPage(page));
+            }
+            finalPdf = await mergedPdf.save();
+        }
+        
+        const pdfBuffer = Buffer.from(finalPdf);
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${registration_code}.pdf"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+        
+    } catch (error) {
+        console.error('Download Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to download certificate: ' + error.message
         });
     }
 });
