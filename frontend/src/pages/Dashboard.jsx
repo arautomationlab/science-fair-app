@@ -159,6 +159,36 @@ const Dashboard = () => {
         navigate('/login');
     };
 
+    // ✅ Regenerate certificate (force new generation)
+const regenerateCertificate = async () => {
+    setLoadingCertificate(true);
+    try {
+        const token = localStorage.getItem('token');
+        const registrationCode = group?.registration_code;
+        
+        if (!registrationCode) {
+            toast.error('Registration code not found');
+            return;
+        }
+        
+        // ✅ Force regenerate by calling the generate endpoint
+        const response = await axios.get(
+            `${API_URL}/api/certificates/generate/${registrationCode}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        if (response.data.success) {
+            setHasCertificate(true);
+            setCertificate(response.data.data.certificate_url);
+            setStudentCount(response.data.data.pages || 1);
+            toast.success(`🎉 Certificate regenerated successfully!`);
+        }
+    } catch (error) {
+        toast.error(error.response?.data?.message || 'Failed to regenerate certificate');
+    } finally {
+        setLoadingCertificate(false);
+    }
+};
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -286,74 +316,90 @@ const Dashboard = () => {
                 </div>
 
                 {/* ✅ CERTIFICATE SECTION */}
-                <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                    <h3 className="text-lg font-semibold text-gray-700 mb-3">🏆 Certificate</h3>
-                    
-                    {!certificateStatus.available ? (
-                        // 🔒 Certificates not yet available
-                        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                            <div className="flex items-center gap-3">
-                                <span className="text-3xl">🔒</span>
-                                <div>
-                                    <p className="font-medium text-yellow-800">Certificates Not Yet Available</p>
-                                    <p className="text-sm text-yellow-700">
-                                        {certificateStatus.message || 'Certificates will be available after the Science Fair concludes.'}
-                                    </p>
-                                    <p className="text-xs text-yellow-600 mt-1">
-                                        📅 Fair Date: {certificateStatus.fairDate || '2026-08-01'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    ) : hasCertificate ? (
-                        // ✅ Certificate ready for download
-                        <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                            <div className="flex items-center justify-between flex-wrap gap-3">
-                                <div>
-                                    <p className="text-green-700 font-medium">🎉 Your participation certificate is ready!</p>
-                                    <p className="text-sm text-green-600">
-                                        {studentCount > 1 
-                                            ? `📄 Certificate has ${studentCount} pages (one for each student)`
-                                            : '📄 Certificate is ready for download'
-                                        }
-                                    </p>
-                                </div>
-                                <a
-                                    href={certificate}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
-                                >
-                                    📄 Download Certificate
-                                </a>
-                            </div>
-                        </div>
-                    ) : (
-                        // 📌 Certificate available but not yet generated
-                        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                            <div className="flex items-center justify-between flex-wrap gap-3">
-                                <div>
-                                    <p className="text-blue-700 font-medium">📌 Certificate is now available!</p>
-                                    <p className="text-sm text-blue-600">Click the button to generate your participation certificate.</p>
-                                </div>
-                                <button
-                                    onClick={generateCertificate}
-                                    disabled={loadingCertificate}
-                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-                                >
-                                    {loadingCertificate ? (
-                                        <>
-                                            <span className="animate-spin">⏳</span>
-                                            Generating...
-                                        </>
-                                    ) : (
-                                        '🏆 Generate Certificate'
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    )}
+<div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+    <h3 className="text-lg font-semibold text-gray-700 mb-3">🏆 Certificate</h3>
+    
+    {!certificateStatus.available ? (
+        // 🔒 Certificates not yet available
+        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
+            <div className="flex items-center gap-3">
+                <span className="text-3xl">🔒</span>
+                <div>
+                    <p className="font-medium text-yellow-800">Certificates Not Yet Available</p>
+                    <p className="text-sm text-yellow-700">
+                        {certificateStatus.message || 'Certificates will be available after the Science Fair concludes.'}
+                    </p>
+                    <p className="text-xs text-yellow-600 mt-1">
+                        📅 Fair Date: {certificateStatus.fairDate || '2026-08-01'}
+                    </p>
                 </div>
+            </div>
+        </div>
+    ) : hasCertificate ? (
+        // ✅ Certificate ready for download
+        <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                    <p className="text-green-700 font-medium">🎉 Your participation certificate is ready!</p>
+                    <p className="text-sm text-green-600">
+                        {studentCount > 1 
+                            ? `📄 Certificate has ${studentCount} pages (one for each student)`
+                            : '📄 Certificate is ready for download'
+                        }
+                    </p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                    <a
+                        href={certificate}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                    >
+                        📄 Download Certificate
+                    </a>
+                    <button
+                        onClick={regenerateCertificate}
+                        disabled={loadingCertificate}
+                        className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {loadingCertificate ? (
+                            <>
+                                <span className="animate-spin">⏳</span>
+                                Regenerating...
+                            </>
+                        ) : (
+                            '🔄 Regenerate'
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    ) : (
+        // 📌 Certificate available but not yet generated
+        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                    <p className="text-blue-700 font-medium">📌 Certificate is now available!</p>
+                    <p className="text-sm text-blue-600">Click the button to generate your participation certificate.</p>
+                </div>
+                <button
+                    onClick={generateCertificate}
+                    disabled={loadingCertificate}
+                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                    {loadingCertificate ? (
+                        <>
+                            <span className="animate-spin">⏳</span>
+                            Generating...
+                        </>
+                    ) : (
+                        '🏆 Generate Certificate'
+                    )}
+                </button>
+            </div>
+        </div>
+    )}
+</div>
 
                 {/* ✅ STUDENT CREDENTIALS */}
                 <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
