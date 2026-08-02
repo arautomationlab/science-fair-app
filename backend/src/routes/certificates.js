@@ -13,14 +13,13 @@ const path = require('path');
 
 router.get('/version', (req, res) => {
     res.json({
-        version: "CERTIFICATE VERSION 11",
+        version: "CERTIFICATE VERSION 12",
         time: new Date(),
-        message: "This is the latest certificates.js with public Cloudinary access"
+        message: "Fixed duplicate pdfUrl and added download flag"
     });
 });
 
-// ✅ DEBUG: Confirm file is loaded
-console.log('✅ LOADING CERTIFICATES.JS - VERSION WITH PUBLIC ACCESS');
+console.log('✅ LOADING CERTIFICATES.JS - VERSION 12');
 
 // Cloudinary Config
 cloudinary.config({
@@ -51,12 +50,10 @@ async function generateCertificatePage(student, group) {
     
     const page = pdfDoc.addPage([pageWidth, pageHeight]);
     
-    // Download template image using axios
     const imageResponse = await axios.get(TEMPLATE_URL, { responseType: 'arraybuffer' });
     const imageBytes = imageResponse.data;
     const image = await pdfDoc.embedJpg(imageBytes);
     
-    // Draw template image as background
     page.drawImage(image, {
         x: 0,
         y: 0,
@@ -64,13 +61,9 @@ async function generateCertificatePage(student, group) {
         height: pageHeight,
     });
     
-    // ✅ Load bold font
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     
-    // ✅ Student Name - BOLD + PURPLE
     const studentName = `${student.firstName || ''} ${student.middleName || ''} ${student.lastName || ''}`.trim() || '_________________';
-    
-    // ✅ DEBUG: Log the student name
     console.log('📝 Student Name:', studentName);
     
     page.drawText(studentName, {
@@ -78,17 +71,16 @@ async function generateCertificatePage(student, group) {
         y: 435,
         size: 38,
         font: boldFont,
-        color: rgb(0.6, 0.1, 0.9), // Bright Purple
+        color: rgb(0.6, 0.1, 0.9),
     });
     
-    // ✅ Grade - BOLD + PURPLE
     const gradeText = `${group.grade} - ${group.division}`;
     page.drawText(gradeText, {
         x: 500,
         y: 385,
         size: 30,
         font: boldFont,
-        color: rgb(0.6, 0.1, 0.9), // Bright Purple
+        color: rgb(0.6, 0.1, 0.9),
     });
     
     console.log('✅ Certificate page generated with bold purple text');
@@ -110,7 +102,6 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             });
         }
         
-        // Get group data
         const groupResult = await pool.query(
             `SELECT g.id, g.registration_code, g.grade, g.division, 
                     g.team_name, g.students_data, g.certificate_url
@@ -128,7 +119,6 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
         
         const group = groupResult.rows[0];
         
-        // Parse students
         let students = group.students_data;
         if (typeof students === 'string') {
             students = JSON.parse(students);
@@ -144,14 +134,12 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             });
         }
         
-        // Generate one PDF per student
         const allPdfPages = [];
         for (const student of students) {
             const pdfBytes = await generateCertificatePage(student, group);
             allPdfPages.push(pdfBytes);
         }
         
-        // Merge all PDFs into one file
         let finalPdf;
         if (allPdfPages.length === 1) {
             finalPdf = allPdfPages[0];
@@ -165,37 +153,30 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             finalPdf = await mergedPdf.save();
         }
         
-        // ✅ Upload to Cloudinary with PUBLIC access
         // Upload to Cloudinary
-const uploadResult = await new Promise((resolve, reject) => {
-    cloudinary.uploader.upload_stream(
-        {
-            resource_type: "raw",
-            public_id: `certificates/${registration_code}`,
-            format: "pdf",
-            overwrite: true,
-            invalidate: true
-        },
-        (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-        }
-    ).end(finalPdf);
-});
-
-// ✅ Force download with attachment flag
-let pdfUrl = uploadResult.secure_url;
-if (!pdfUrl.endsWith('.pdf')) {
-    pdfUrl = pdfUrl + '.pdf';
-}
-// ✅ This forces the browser to download instead of display
-pdfUrl = pdfUrl + '?fl_attachment=true';
+        const uploadResult = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                {
+                    resource_type: "raw",
+                    public_id: `certificates/${registration_code}`,
+                    format: "pdf",
+                    overwrite: true,
+                    invalidate: true
+                },
+                (error, result) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                }
+            ).end(finalPdf);
+        });
         
-        // Ensure .pdf extension
+        // ✅ SINGLE pdfUrl with download flag (FIXED)
         let pdfUrl = uploadResult.secure_url;
         if (!pdfUrl.endsWith('.pdf')) {
             pdfUrl = pdfUrl + '.pdf';
         }
+        // Force download
+        pdfUrl = pdfUrl + '?fl_attachment=true';
         
         await pool.query(
             `UPDATE groups SET certificate_url = $1 WHERE registration_code = $2`,
