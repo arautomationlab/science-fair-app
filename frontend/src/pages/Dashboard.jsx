@@ -159,7 +159,7 @@ const Dashboard = () => {
         navigate('/login');
     };
 
-    // ✅ Regenerate certificate (force new generation)
+    // ✅ Regenerate certificate and auto-download
 const regenerateCertificate = async () => {
     setLoadingCertificate(true);
     try {
@@ -171,17 +171,28 @@ const regenerateCertificate = async () => {
             return;
         }
         
-        // ✅ Force regenerate by calling the generate endpoint
         const response = await axios.get(
             `${API_URL}/api/certificates/generate/${registrationCode}`,
             { headers: { Authorization: `Bearer ${token}` } }
         );
         
         if (response.data.success) {
+            const newUrl = response.data.data.certificate_url;
+            
+            // ✅ Update state
             setHasCertificate(true);
-            setCertificate(response.data.data.certificate_url);
+            setCertificate(newUrl);
             setStudentCount(response.data.data.pages || 1);
-            toast.success(`🎉 Certificate regenerated successfully!`);
+            
+            // ✅ AUTO-DOWNLOAD the new certificate
+            const link = document.createElement('a');
+            link.href = newUrl;
+            link.download = `Certificate_${registrationCode}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            toast.success(`🎉 Certificate regenerated and downloaded successfully!`);
         }
     } catch (error) {
         toast.error(error.response?.data?.message || 'Failed to regenerate certificate');
@@ -315,7 +326,7 @@ const regenerateCertificate = async () => {
                     )}
                 </div>
 
-                {/* ✅ CERTIFICATE SECTION */}
+               {/* ✅ CERTIFICATE SECTION */}
 <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
     <h3 className="text-lg font-semibold text-gray-700 mb-3">🏆 Certificate</h3>
     
@@ -349,14 +360,21 @@ const regenerateCertificate = async () => {
                     </p>
                 </div>
                 <div className="flex gap-2 flex-wrap">
-                    <a
-                        href={certificate}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    <button
+                        onClick={() => {
+                            // ✅ Download button
+                            const link = document.createElement('a');
+                            link.href = certificate;
+                            link.download = `Certificate_${group?.registration_code}.pdf`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            toast.success('Downloading certificate...');
+                        }}
                         className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
                     >
                         📄 Download Certificate
-                    </a>
+                    </button>
                     <button
                         onClick={regenerateCertificate}
                         disabled={loadingCertificate}
