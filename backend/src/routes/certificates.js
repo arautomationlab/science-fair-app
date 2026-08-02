@@ -6,7 +6,7 @@ const { pool } = require('../config/database');
 const { authenticate } = require('../middleware/auth');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const fontkit = require('fontkit');
-const fetch = require('node-fetch');
+const axios = require('axios'); // ✅ Changed from fetch to axios
 const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 const path = require('path');
@@ -18,15 +18,14 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Certificate Template URL (Replace with your uploaded template URL)
+// Certificate Template URL
 const TEMPLATE_URL = process.env.CERTIFICATE_TEMPLATE_URL || 'https://res.cloudinary.com/zr8wz6c7/image/upload/v1785430786/WhatsApp_Image_2026-07-30_at_12.31.27_PM_memtfi.jpg';
 
 // Check if certificates are available
 function areCertificatesAvailable() {
     const fairDate = process.env.FAIR_DATE || '2026-08-01';
     const fairEndDate = new Date(fairDate);
-    fairEndDate.setHours(16, 0, 0, 0); // 4:00 PM on fair day
-    
+    fairEndDate.setHours(16, 0, 0, 0);
     const currentDate = new Date();
     return currentDate >= fairEndDate;
 }
@@ -41,9 +40,9 @@ async function generateCertificatePage(student, group, font) {
     
     const page = pdfDoc.addPage([pageWidth, pageHeight]);
     
-    // Download template image
-    const imageResponse = await fetch(TEMPLATE_URL);
-    const imageBytes = await imageResponse.arrayBuffer();
+    // ✅ Download template image using axios
+    const imageResponse = await axios.get(TEMPLATE_URL, { responseType: 'arraybuffer' });
+    const imageBytes = imageResponse.data;
     const image = await pdfDoc.embedJpg(imageBytes);
     
     // Draw template image as background
@@ -54,7 +53,7 @@ async function generateCertificatePage(student, group, font) {
         height: pageHeight,
     });
     
-    // ✅ Student Name (adjust coordinates based on your template)
+    // ✅ Student Name
     const studentName = `${student.firstName || ''} ${student.middleName || ''} ${student.lastName || ''}`.trim() || '_________________';
     page.drawText(studentName, {
         x: 400,
@@ -64,7 +63,7 @@ async function generateCertificatePage(student, group, font) {
         color: rgb(0.1, 0.1, 0.1),
     });
     
-    // ✅ Grade (adjust coordinates based on your template)
+    // ✅ Grade
     const gradeText = `${group.grade} - ${group.division}`;
     page.drawText(gradeText, {
         x: 550,
@@ -83,12 +82,11 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
         const { registration_code } = req.params;
         console.log('📄 Generating certificate for:', registration_code);
         
-        // ✅ Check if certificates are available
         if (!areCertificatesAvailable()) {
             const fairDate = process.env.FAIR_DATE || '2026-08-01';
             return res.status(403).json({
                 success: false,
-                message: `🎯 Certificates will be available after the Science Fair concludes on ${fairDate}. Please check back after 4:00 PM.`
+                message: `🎯 Certificates will be available after the Science Fair concludes on ${fairDate}.`
             });
         }
         
@@ -168,8 +166,7 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
                 {
                     resource_type: 'raw',
                     public_id: `certificates/${registration_code}`,
-                    folder: 'certificates',
-                    use_filename: true
+                    folder: 'certificates'
                 },
                 (error, result) => {
                     if (error) reject(error);
@@ -184,7 +181,7 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             [uploadResult.secure_url, registration_code.toUpperCase()]
         );
         
-        console.log(`✅ Certificate generated for: ${registration_code} (${students.length} students, ${students.length} pages)`);
+        console.log(`✅ Certificate generated for: ${registration_code} (${students.length} students)`);
         
         res.json({
             success: true,
@@ -209,18 +206,15 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
 router.get('/check/:registration_code', authenticate, async (req, res) => {
     try {
         const { registration_code } = req.params;
-        
         const result = await pool.query(
             `SELECT certificate_url FROM groups WHERE registration_code = $1`,
             [registration_code.toUpperCase()]
         );
-        
         res.json({
             success: true,
             available: result.rows[0]?.certificate_url ? true : false,
             url: result.rows[0]?.certificate_url || null
         });
-        
     } catch (error) {
         console.error('Check Certificate Error:', error);
         res.status(500).json({
@@ -235,7 +229,6 @@ router.get('/status', async (req, res) => {
     try {
         const available = areCertificatesAvailable();
         const fairDate = process.env.FAIR_DATE || '2026-08-01';
-        
         res.json({
             success: true,
             data: {
