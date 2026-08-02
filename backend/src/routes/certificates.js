@@ -11,6 +11,14 @@ const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
 const path = require('path');
 
+router.get('/version', (req, res) => {
+    res.json({
+        version: "CERTIFICATE VERSION 10",
+        time: new Date(),
+        message: "This is the latest certificates.js"
+    });
+});
+
 // ✅ DEBUG: Confirm file is loaded
 console.log('✅ LOADING CERTIFICATES.JS - VERSION WITH BOLD PURPLE - FORCE UPDATE');
 
