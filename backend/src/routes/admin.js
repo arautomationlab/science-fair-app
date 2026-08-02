@@ -28,22 +28,26 @@ router.get('/dashboard', authenticateAdmin, async (req, res) => {
                     WHERE js.group_id = g.id
                 ) as judge_count,
                 (
-                    SELECT ROUND(AVG(js.score)::numeric, 1)
-                    FROM judge_scores js 
-                    WHERE js.group_id = g.id
-                ) as average_score,
-                (
-                    SELECT json_agg(
-                        json_build_object(
-                            'judge_name', js.judge_name,
-                            'score', js.score,
-                            'criteria_scores', js.criteria_scores,
-                            'created_at', js.created_at
-                        )
-                    ) 
+                    SELECT COALESCE(
+                        json_agg(
+                            json_build_object(
+                                'judge_name', js.judge_name,
+                                'score', js.score,
+                                'criteria_scores', js.criteria_scores,
+                                'created_at', js.created_at
+                            )
+                            ORDER BY js.created_at
+                        ),
+                        '[]'::json
+                    )
                     FROM judge_scores js 
                     WHERE js.group_id = g.id
                 ) as judge_scores,
+                (
+                    SELECT SUM(js.score) 
+                    FROM judge_scores js 
+                    WHERE js.group_id = g.id
+                ) as total_score,
                 (
                     SELECT COUNT(*) 
                     FROM parent_ratings pr 

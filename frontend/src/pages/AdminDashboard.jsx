@@ -624,22 +624,22 @@ const exportQRCodes = async () => {
                                                     {project.judge_count || 0}/2 judges
                                                 </span>
                                             </td>
-                                            {/* ✅ SCORE COLUMN - Shows average score with judge count */}
-                                            <td className="px-4 py-3">
-                                                {project.average_score ? (
-                                                    <div className="text-center">
-                                                        <span className="font-bold text-lg text-blue-600">
-                                                            {Math.round(project.average_score)}%
-                                                        </span>
-                                                        <br />
-                                                        <span className="text-xs text-gray-400">
-                                                            {project.judge_count || 0} judge(s)
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-gray-400 text-sm">—</span>
-                                                )}
-                                            </td>
+                                            {/* ✅ SCORE COLUMN - Shows TOTAL score */}
+<td className="px-4 py-3">
+    {project.total_score ? (
+        <div className="text-center">
+            <span className="font-bold text-lg text-blue-600">
+                {project.total_score}
+            </span>
+            <br />
+            <span className="text-xs text-gray-400">
+                {project.judge_count || 0} judge(s)
+            </span>
+        </div>
+    ) : (
+        <span className="text-gray-400 text-sm">—</span>
+    )}
+</td>
                                             <td className="px-4 py-3">
                                                 <button
                                                     onClick={() => navigate(`/project/${project.registration_code}`)}

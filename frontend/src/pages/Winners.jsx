@@ -87,7 +87,7 @@ const Winners = () => {
         return students;
     };
 
-    // ✅ Export to Excel - with Total Score out of 40 per judge
+    // ✅ Export to Excel - with Total Scores
 const exportToExcel = () => {
     const gradeProjects = allProjects.filter(p => p.grade === parseInt(grade));
     
@@ -97,7 +97,7 @@ const exportToExcel = () => {
     }
 
     const exportData = gradeProjects.map(project => {
-        // ✅ Get judge scores
+        // ✅ Get judge scores safely
         let judgeScores = [];
         if (project.judge_scores) {
             if (Array.isArray(project.judge_scores)) {
@@ -127,7 +127,7 @@ const exportToExcel = () => {
             'Division': project.division || 'N/A',
         };
 
-        // ✅ Add each judge's score (out of 40)
+        // ✅ Add each judge's TOTAL score (out of 40)
         const scores = [];
         judgeScores.forEach((score, index) => {
             const scoreValue = score.score || 0;
@@ -137,7 +137,7 @@ const exportToExcel = () => {
 
         // ✅ Calculate TOTAL (sum of all judges' scores)
         const total = scores.reduce((sum, s) => sum + s, 0);
-        const maxPossible = scores.length * 40; // Each judge has max 40
+        const maxPossible = scores.length * 40;
         
         row['Total Score'] = scores.length > 0 ? `${total}/${maxPossible}` : 'N/A';
         row['Average %'] = scores.length > 0 ? Math.round((total / maxPossible) * 100) + '%' : 'N/A';
