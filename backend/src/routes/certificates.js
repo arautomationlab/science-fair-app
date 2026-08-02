@@ -65,8 +65,8 @@ async function generateCertificatePage(student, group) {
     console.log('📝 Student Name:', studentName);
     
     page.drawText(studentName, {
-        x: 540,   // ✅ 8 letters RIGHT from 460
-        y: 525,   // ✅ 1.5 lines UP from 480
+        x: 550,   // ✅ 8 letters RIGHT from 460
+        y: 500,   // ✅ 1.5 lines UP from 480
         size: 38,
         font: boldFont,
         color: rgb(0.6, 0.1, 0.9),
@@ -77,8 +77,8 @@ async function generateCertificatePage(student, group) {
     // From 430 to 475 (1.5 lines UP = +45px)
     const gradeText = `${group.grade} - ${group.division}`;
     page.drawText(gradeText, {
-        x: 300,   // ✅ 10 letters LEFT from 400
-        y: 475,   // ✅ 1.5 lines UP from 430
+        x: 280,   // ✅ 10 letters LEFT from 400
+        y: 450,   // ✅ 1.5 lines UP from 430
         size: 30,
         font: boldFont,
         color: rgb(0.6, 0.1, 0.9),
