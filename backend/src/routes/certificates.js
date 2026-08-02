@@ -31,7 +31,7 @@ function areCertificatesAvailable() {
 }
 
 // Generate single certificate page
-async function generateCertificatePage(student, group, font, boldFont) {
+async function generateCertificatePage(student, group) {
     const pageWidth = 1200;
     const pageHeight = 848;
     
@@ -40,7 +40,7 @@ async function generateCertificatePage(student, group, font, boldFont) {
     
     const page = pdfDoc.addPage([pageWidth, pageHeight]);
     
-    // ✅ Download template image using axios
+    // Download template image using axios
     const imageResponse = await axios.get(TEMPLATE_URL, { responseType: 'arraybuffer' });
     const imageBytes = imageResponse.data;
     const image = await pdfDoc.embedJpg(imageBytes);
@@ -53,14 +53,17 @@ async function generateCertificatePage(student, group, font, boldFont) {
         height: pageHeight,
     });
     
+    // ✅ Load built-in bold font directly (no external file needed)
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    
     // ✅ Student Name - BOLD + PURPLE
     const studentName = `${student.firstName || ''} ${student.middleName || ''} ${student.lastName || ''}`.trim() || '_________________';
     page.drawText(studentName, {
-        x: 380,
+        x: 350,
         y: 435,
         size: 36,
         font: boldFont,
-        color: rgb(0.5, 0.1, 0.8), // Purple color
+        color: rgb(0.6, 0.1, 0.9), // Bright Purple
     });
     
     // ✅ Grade - BOLD + PURPLE
@@ -70,7 +73,7 @@ async function generateCertificatePage(student, group, font, boldFont) {
         y: 385,
         size: 28,
         font: boldFont,
-        color: rgb(0.5, 0.1, 0.8), // Purple color
+        color: rgb(0.6, 0.1, 0.9), // Bright Purple
     });
     
     return await pdfDoc.save();
@@ -124,31 +127,10 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             });
         }
         
-        // ✅ Load fonts (regular + bold)
-        const fontPath = path.join(__dirname, '../../fonts/times.ttf');
-        const boldFontPath = path.join(__dirname, '../../fonts/timesbd.ttf');
-        let font, boldFont;
-        
-        try {
-            // Try to load custom fonts
-            const fontBytes = fs.readFileSync(fontPath);
-            const boldFontBytes = fs.readFileSync(boldFontPath);
-            const pdfDoc = await PDFDocument.create();
-            pdfDoc.registerFontkit(fontkit);
-            font = await pdfDoc.embedFont(fontBytes);
-            boldFont = await pdfDoc.embedFont(boldFontBytes);
-        } catch (error) {
-            // Fallback to built-in fonts
-            const pdfDoc = await PDFDocument.create();
-            pdfDoc.registerFontkit(fontkit);
-            font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-            boldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
-        }
-        
         // ✅ Generate one PDF per student
         const allPdfPages = [];
         for (const student of students) {
-            const pdfBytes = await generateCertificatePage(student, group, font, boldFont);
+            const pdfBytes = await generateCertificatePage(student, group);
             allPdfPages.push(pdfBytes);
         }
         
@@ -166,13 +148,14 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             finalPdf = await mergedPdf.save();
         }
         
-        // Upload to Cloudinary
+        // ✅ Upload to Cloudinary with .pdf extension
         const uploadResult = await new Promise((resolve, reject) => {
             cloudinary.uploader.upload_stream(
                 {
                     resource_type: 'raw',
                     public_id: `certificates/${registration_code}`,
-                    folder: 'certificates'
+                    folder: 'certificates',
+                    format: 'pdf' // ✅ Force PDF format
                 },
                 (error, result) => {
                     if (error) reject(error);
@@ -181,19 +164,25 @@ router.get('/generate/:registration_code', authenticate, async (req, res) => {
             ).end(finalPdf);
         });
         
-        // Save URL to database
+        // ✅ Save URL with .pdf extension
+        let pdfUrl = uploadResult.secure_url;
+        if (!pdfUrl.endsWith('.pdf')) {
+            pdfUrl = pdfUrl + '.pdf';
+        }
+        
         await pool.query(
             `UPDATE groups SET certificate_url = $1 WHERE registration_code = $2`,
-            [uploadResult.secure_url, registration_code.toUpperCase()]
+            [pdfUrl, registration_code.toUpperCase()]
         );
         
         console.log(`✅ Certificate generated for: ${registration_code} (${students.length} students)`);
+        console.log(`📎 URL: ${pdfUrl}`);
         
         res.json({
             success: true,
             message: `Certificate generated successfully for ${students.length} student(s)! 🎉`,
             data: {
-                certificate_url: uploadResult.secure_url,
+                certificate_url: pdfUrl,
                 student_count: students.length,
                 pages: students.length
             }
