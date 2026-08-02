@@ -78,9 +78,8 @@ router.post('/verify-access', async (req, res) => {
 // ==================== SUBMIT JUDGE SCORE ====================
 router.post('/score', async (req, res) => {
     try {
-        // ✅ FIXED: Use ternary operator instead of optional chaining
-        const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
-        
+        // ✅ Verify judge token
+        const token = req.headers.authorization?.split(' ')[1];
         if (!token) {
             return res.status(401).json({
                 success: false,
@@ -100,6 +99,7 @@ router.post('/score', async (req, res) => {
 
         const { registration_code, score, comments, criteria_scores } = req.body;
 
+        // Find the group
         const groupResult = await pool.query(
             'SELECT id FROM groups WHERE registration_code = $1',
             [registration_code.toUpperCase()]
@@ -115,6 +115,19 @@ router.post('/score', async (req, res) => {
         const groupId = groupResult.rows[0].id;
         const judgeName = decoded.judge_name;
 
+        // ✅ Calculate TOTAL score (sum of all criteria)
+        let totalScore = score; // Default to passed score
+        if (criteria_scores) {
+            // If criteria_scores is provided, calculate total
+            const criteria = typeof criteria_scores === 'string' 
+                ? JSON.parse(criteria_scores) 
+                : criteria_scores;
+            
+            // Sum all criteria values (Innovation, Presentation, Research, Impact)
+            totalScore = Object.values(criteria).reduce((sum, val) => sum + (val || 0), 0);
+        }
+
+        // ✅ Store score with criteria_scores
         const criteriaScoresJSON = criteria_scores ? JSON.stringify(criteria_scores) : null;
 
         const existing = await pool.query(
@@ -129,14 +142,14 @@ router.post('/score', async (req, res) => {
                 SET score = $1, comments = $2, criteria_scores = $3, created_at = NOW()
                 WHERE group_id = $4 AND judge_name = $5
                 RETURNING *`,
-                [score, comments || '', criteriaScoresJSON, groupId, judgeName]
+                [totalScore, comments || '', criteriaScoresJSON, groupId, judgeName]
             );
         } else {
             result = await pool.query(
                 `INSERT INTO judge_scores (group_id, judge_name, score, comments, criteria_scores)
                 VALUES ($1, $2, $3, $4, $5)
                 RETURNING *`,
-                [groupId, judgeName, score, comments || '', criteriaScoresJSON]
+                [groupId, judgeName, totalScore, comments || '', criteriaScoresJSON]
             );
         }
 
