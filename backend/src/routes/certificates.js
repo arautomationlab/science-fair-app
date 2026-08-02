@@ -56,7 +56,7 @@ async function generateCertificatePage(student, group) {
     });
     
     // ✅ Load Italianno Calligraphy Font
-    const fontPath = path.join(__dirname, '../../fonts/Italianno-Regular.ttf');
+    const fontPath = path.join(__dirname, '../../fonts/Italianno-Regular');
     let calligraphyFont;
     try {
         const fontBytes = fs.readFileSync(fontPath);
@@ -77,7 +77,8 @@ async function generateCertificatePage(student, group) {
     page.drawText(studentName, {
         x: 550,   // ✅ SAME POSITION
         y: 500,   // ✅ SAME POSITION
-        size: 38, // ✅ Slightly larger for calligraphy font
+        size: 38, // ✅ original font size
+
         font: calligraphyFont,
         color: rgb(0.6, 0.1, 0.9),
     });
