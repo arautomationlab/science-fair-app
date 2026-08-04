@@ -7,64 +7,69 @@ const QRCode = require('qrcode');
 
 // ✅ PUBLIC PROJECT VIEW - HIDE JUDGE SCORES
 router.get('/public/:code', async (req, res) => {
+    // ... existing code ...
+});
+
+// ✅ GET ALL SUBMITTED PROJECTS - MUST COME BEFORE /:code
+router.get('/all-submitted', async (req, res) => {
     try {
-        const { code } = req.params;
-        console.log('📥 Public project request for code:', code);
-
-        const result = await pool.query(
-            `SELECT 
-                g.id, g.registration_code, g.grade, g.division, 
-                g.teacher_guide, g.team_name, g.project_title, g.abstract,
-                g.students_data, g.project_submitted, g.created_at,
-                pd.aim, pd.materials, pd.procedure, pd.conclusion,
-                pd.abstract as project_abstract, pd.video_link, pd.images,
-                (SELECT ROUND(AVG(stars)::numeric, 1) FROM parent_ratings WHERE group_id = g.id) as average_rating,
-                (SELECT COUNT(*) FROM parent_ratings WHERE group_id = g.id) as total_ratings,
-                -- ✅ FIX: Only send a boolean, NOT the actual scores
-                CASE 
-                    WHEN EXISTS (SELECT 1 FROM judge_scores WHERE group_id = g.id) 
-                    THEN true 
-                    ELSE false 
-                END as has_judge_scores,
-                -- Also send judge count (optional, for display purposes)
-                (SELECT COUNT(*) FROM judge_scores WHERE group_id = g.id) as judge_count
-            FROM groups g
-            LEFT JOIN project_details pd ON g.id = pd.group_id
-            WHERE g.registration_code ILIKE $1`,
-            [code]
-        );
-
-        console.log('🔍 Found rows:', result.rows.length);
+        const { grade, division, teacher } = req.query;
         
-        if (result.rows.length > 0) {
-            console.log('📊 has_judge_scores:', result.rows[0].has_judge_scores);
-            console.log('📊 judge_count:', result.rows[0].judge_count);
+        let query = `
+            SELECT 
+                g.registration_code,
+                g.team_name,
+                g.project_title,
+                g.grade,
+                g.division,
+                g.teacher_guide,
+                g.project_submitted,
+                (SELECT ROUND(AVG(stars)::numeric, 1) FROM parent_ratings WHERE group_id = g.id) as average_rating,
+                (SELECT COUNT(*) FROM parent_ratings WHERE group_id = g.id) as total_ratings
+            FROM groups g
+            WHERE g.project_submitted = true
+        `;
+        
+        const params = [];
+        let paramIndex = 1;
+        
+        if (grade) {
+            query += ` AND g.grade = $${paramIndex}`;
+            params.push(parseInt(grade));
+            paramIndex++;
         }
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Project not found'
-            });
+        
+        if (division) {
+            query += ` AND g.division ILIKE $${paramIndex}`;
+            params.push(division);
+            paramIndex++;
         }
-
-        delete result.rows[0].password;
-
+        
+        if (teacher) {
+            query += ` AND g.teacher_guide ILIKE $${paramIndex}`;
+            params.push(`%${teacher}%`);
+            paramIndex++;
+        }
+        
+        query += ` ORDER BY g.grade, g.division, g.team_name`;
+        
+        const result = await pool.query(query, params);
+        
         res.json({
             success: true,
-            data: result.rows[0]
+            data: result.rows
         });
-
+        
     } catch (error) {
-        console.error('Public Project Error:', error);
+        console.error('Get All Projects Error:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch project: ' + error.message
+            message: 'Failed to fetch projects: ' + error.message
         });
     }
 });
 
-// ✅ GET Project by Code (for dashboard)
+// ✅ GET Project by Code - COMES AFTER specific routes
 router.get('/:code', async (req, res) => {
     try {
         const { code } = req.params;
