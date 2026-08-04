@@ -12,68 +12,17 @@ const Dashboard = () => {
     const [projectDetails, setProjectDetails] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Add these states
-const [browseProjects, setBrowseProjects] = useState([]);
-const [filteredProjects, setFilteredProjects] = useState([]);
-const [browseLoading, setBrowseLoading] = useState(false);
-const [showBrowse, setShowBrowse] = useState(false);
-const [browseFilters, setBrowseFilters] = useState({
-    grade: '',
-    division: '',
-    teacher: ''
-});
-const [uniqueTeachers, setUniqueTeachers] = useState([]);
-
-// Fetch all submitted projects
-const fetchAllProjects = async () => {
-    setBrowseLoading(true);
-    try {
-        const token = localStorage.getItem('token');
-        let url = `${API_URL}/api/projects/all-submitted`;
-        const params = new URLSearchParams();
-        if (browseFilters.grade) params.append('grade', browseFilters.grade);
-        if (browseFilters.division) params.append('division', browseFilters.division);
-        if (browseFilters.teacher) params.append('teacher', browseFilters.teacher);
-        if (params.toString()) url += `?${params.toString()}`;
-        
-        const response = await axios.get(url, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        if (response.data.success) {
-            setBrowseProjects(response.data.data);
-            setFilteredProjects(response.data.data);
-            // Extract unique teachers for filter
-            const teachers = [...new Set(response.data.data.map(p => p.teacher_guide).filter(Boolean))];
-            setUniqueTeachers(teachers);
-        }
-    } catch (error) {
-        console.error('Error fetching projects:', error);
-        toast.error('Failed to load projects');
-    } finally {
-        setBrowseLoading(false);
-    }
-};
-
-// Handle filter change
-const handleBrowseFilterChange = (e) => {
-    const { name, value } = e.target;
-    setBrowseFilters(prev => ({ ...prev, [name]: value }));
-};
-
-// Apply filters
-useEffect(() => {
-    let filtered = browseProjects;
-    if (browseFilters.grade) {
-        filtered = filtered.filter(p => p.grade === parseInt(browseFilters.grade));
-    }
-    if (browseFilters.division) {
-        filtered = filtered.filter(p => p.division === browseFilters.division);
-    }
-    if (browseFilters.teacher) {
-        filtered = filtered.filter(p => p.teacher_guide === browseFilters.teacher);
-    }
-    setFilteredProjects(filtered);
-}, [browseFilters, browseProjects]);
+    // Browse Projects States
+    const [browseProjects, setBrowseProjects] = useState([]);
+    const [filteredProjects, setFilteredProjects] = useState([]);
+    const [browseLoading, setBrowseLoading] = useState(false);
+    const [showBrowse, setShowBrowse] = useState(false);
+    const [browseFilters, setBrowseFilters] = useState({
+        grade: '',
+        division: '',
+        teacher: ''
+    });
+    const [uniqueTeachers, setUniqueTeachers] = useState([]);
 
     // ✅ Certificate States
     const [certificate, setCertificate] = useState(null);
@@ -185,11 +134,10 @@ useEffect(() => {
                 `${API_URL}/api/certificates/generate/${registrationCode}`,
                 { 
                     headers: { Authorization: `Bearer ${token}` },
-                    responseType: 'blob' // ✅ IMPORTANT: Handle binary PDF
+                    responseType: 'blob'
                 }
             );
             
-            // ✅ Create download link from blob
             const blob = new Blob([response.data], { type: 'application/pdf' });
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -200,7 +148,6 @@ useEffect(() => {
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
             
-            // ✅ Update state
             setHasCertificate(true);
             const studentCount = group?.students_data ? JSON.parse(JSON.stringify(group.students_data)).length : 1;
             setStudentCount(studentCount);
@@ -230,11 +177,10 @@ useEffect(() => {
                 `${API_URL}/api/certificates/generate/${registrationCode}`,
                 { 
                     headers: { Authorization: `Bearer ${token}` },
-                    responseType: 'blob' // ✅ IMPORTANT: Handle binary PDF
+                    responseType: 'blob'
                 }
             );
             
-            // ✅ Create download link from blob
             const blob = new Blob([response.data], { type: 'application/pdf' });
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -254,6 +200,56 @@ useEffect(() => {
             setLoadingCertificate(false);
         }
     };
+
+    // ✅ Fetch all submitted projects
+    const fetchAllProjects = async () => {
+        setBrowseLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            let url = `${API_URL}/api/projects/all-submitted`;
+            const params = new URLSearchParams();
+            if (browseFilters.grade) params.append('grade', browseFilters.grade);
+            if (browseFilters.division) params.append('division', browseFilters.division);
+            if (browseFilters.teacher) params.append('teacher', browseFilters.teacher);
+            if (params.toString()) url += `?${params.toString()}`;
+            
+            const response = await axios.get(url, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (response.data.success) {
+                setBrowseProjects(response.data.data);
+                setFilteredProjects(response.data.data);
+                const teachers = [...new Set(response.data.data.map(p => p.teacher_guide).filter(Boolean))];
+                setUniqueTeachers(teachers);
+            }
+        } catch (error) {
+            console.error('Error fetching projects:', error);
+            toast.error('Failed to load projects');
+        } finally {
+            setBrowseLoading(false);
+        }
+    };
+
+    // Handle filter change
+    const handleBrowseFilterChange = (e) => {
+        const { name, value } = e.target;
+        setBrowseFilters(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Apply filters
+    useEffect(() => {
+        let filtered = browseProjects;
+        if (browseFilters.grade) {
+            filtered = filtered.filter(p => p.grade === parseInt(browseFilters.grade));
+        }
+        if (browseFilters.division) {
+            filtered = filtered.filter(p => p.division === browseFilters.division);
+        }
+        if (browseFilters.teacher) {
+            filtered = filtered.filter(p => p.teacher_guide === browseFilters.teacher);
+        }
+        setFilteredProjects(filtered);
+    }, [browseFilters, browseProjects]);
 
     const downloadQRCode = (qrCodeDataUrl, registrationCode) => {
         if (!qrCodeDataUrl) {
@@ -304,99 +300,6 @@ useEffect(() => {
             </div>
         );
     }
-
-    {/* Browse Projects Section - Public Only */}
-<div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-    <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold text-gray-700">📚 Explore Other Projects</h3>
-        <button
-            onClick={() => {
-                setShowBrowse(!showBrowse);
-                if (!showBrowse) fetchAllProjects();
-            }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
-        >
-            {showBrowse ? '🔒 Hide Projects' : '🔍 Browse Projects'}
-        </button>
-    </div>
-    
-    {showBrowse && (
-        <div>
-            {/* Simple Filters */}
-            <div className="flex flex-wrap gap-3 mb-4">
-                <select
-                    name="grade"
-                    value={browseFilters.grade}
-                    onChange={handleBrowseFilterChange}
-                    className="rounded-md border-gray-300 shadow-sm text-sm"
-                >
-                    <option value="">All Grades</option>
-                    {[3,4,5,6,7,8,9,10].map(g => (
-                        <option key={g} value={g}>Grade {g}</option>
-                    ))}
-                </select>
-                <select
-                    name="division"
-                    value={browseFilters.division}
-                    onChange={handleBrowseFilterChange}
-                    className="rounded-md border-gray-300 shadow-sm text-sm"
-                >
-                    <option value="">All Divisions</option>
-                    {['A','B','C','D','E','F','G','H','I'].map(d => (
-                        <option key={d} value={d}>Division {d}</option>
-                    ))}
-                </select>
-                <select
-                    name="teacher"
-                    value={browseFilters.teacher}
-                    onChange={handleBrowseFilterChange}
-                    className="rounded-md border-gray-300 shadow-sm text-sm"
-                >
-                    <option value="">All Teachers</option>
-                    {uniqueTeachers.map(t => (
-                        <option key={t} value={t}>{t}</option>
-                    ))}
-                </select>
-                <span className="text-sm text-gray-500 ml-auto">
-                    {filteredProjects.length} project(s)
-                </span>
-            </div>
-            
-            {/* Projects Grid */}
-            {browseLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading projects...</div>
-            ) : filteredProjects.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                    No projects found. Try changing filters.
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {filteredProjects.map((project) => (
-                        <div 
-                            key={project.registration_code}
-                            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
-                        >
-                            <h4 className="font-bold text-gray-800">{project.team_name}</h4>
-                            <p className="text-sm text-gray-600 truncate">{project.project_title || 'No title'}</p>
-                            <div className="flex flex-wrap gap-2 mt-2 text-xs text-gray-500">
-                                <span className="bg-blue-100 px-2 py-1 rounded">Grade {project.grade}</span>
-                                <span className="bg-gray-100 px-2 py-1 rounded">Div {project.division}</span>
-                                <span className="bg-green-100 px-2 py-1 rounded">👨‍🏫 {project.teacher_guide || 'N/A'}</span>
-                                <span className="bg-yellow-100 px-2 py-1 rounded">⭐ {project.average_rating || 0}</span>
-                            </div>
-                            <button
-                                onClick={() => window.open(`/project/${project.registration_code}`, '_blank')}
-                                className="mt-3 w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm transition"
-                            >
-                                🔍 View Project
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    )}
-</div>
 
     // ✅ Fixed code - handles both string and object
     let students = group.students_data;
@@ -582,6 +485,99 @@ useEffect(() => {
                                     )}
                                 </button>
                             </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* ✅ BROWSE PROJECTS SECTION - MOVED INSIDE RETURN */}
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-gray-700">📚 Explore Other Projects</h3>
+                        <button
+                            onClick={() => {
+                                setShowBrowse(!showBrowse);
+                                if (!showBrowse) fetchAllProjects();
+                            }}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+                        >
+                            {showBrowse ? '🔒 Hide Projects' : '🔍 Browse Projects'}
+                        </button>
+                    </div>
+                    
+                    {showBrowse && (
+                        <div>
+                            {/* Simple Filters */}
+                            <div className="flex flex-wrap gap-3 mb-4">
+                                <select
+                                    name="grade"
+                                    value={browseFilters.grade}
+                                    onChange={handleBrowseFilterChange}
+                                    className="rounded-md border-gray-300 shadow-sm text-sm"
+                                >
+                                    <option value="">All Grades</option>
+                                    {[3,4,5,6,7,8,9,10].map(g => (
+                                        <option key={g} value={g}>Grade {g}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    name="division"
+                                    value={browseFilters.division}
+                                    onChange={handleBrowseFilterChange}
+                                    className="rounded-md border-gray-300 shadow-sm text-sm"
+                                >
+                                    <option value="">All Divisions</option>
+                                    {['A','B','C','D','E','F','G','H','I'].map(d => (
+                                        <option key={d} value={d}>Division {d}</option>
+                                    ))}
+                                </select>
+                                <select
+                                    name="teacher"
+                                    value={browseFilters.teacher}
+                                    onChange={handleBrowseFilterChange}
+                                    className="rounded-md border-gray-300 shadow-sm text-sm"
+                                >
+                                    <option value="">All Teachers</option>
+                                    {uniqueTeachers.map(t => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                </select>
+                                <span className="text-sm text-gray-500 ml-auto">
+                                    {filteredProjects.length} project(s)
+                                </span>
+                            </div>
+                            
+                            {/* Projects Grid */}
+                            {browseLoading ? (
+                                <div className="text-center py-8 text-gray-500">Loading projects...</div>
+                            ) : filteredProjects.length === 0 ? (
+                                <div className="text-center py-8 text-gray-500">
+                                    No projects found. Try changing filters.
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {filteredProjects.map((project) => (
+                                        <div 
+                                            key={project.registration_code}
+                                            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
+                                        >
+                                            <h4 className="font-bold text-gray-800">{project.team_name}</h4>
+                                            <p className="text-sm text-gray-600 truncate">{project.project_title || 'No title'}</p>
+                                            <div className="flex flex-wrap gap-2 mt-2 text-xs text-gray-500">
+                                                <span className="bg-blue-100 px-2 py-1 rounded">Grade {project.grade}</span>
+                                                <span className="bg-gray-100 px-2 py-1 rounded">Div {project.division}</span>
+                                                <span className="bg-green-100 px-2 py-1 rounded">👨‍🏫 {project.teacher_guide || 'N/A'}</span>
+                                                <span className="bg-yellow-100 px-2 py-1 rounded">⭐ {project.average_rating || 0}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => window.open(`/project/${project.registration_code}`, '_blank')}
+                                                className="mt-3 w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm transition"
+                                            >
+                                                🔍 View Project
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
