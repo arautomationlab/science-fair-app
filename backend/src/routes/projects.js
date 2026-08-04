@@ -215,4 +215,63 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
     }
 });
 
+// ==================== GET ALL SUBMITTED PROJECTS (PUBLIC INFO ONLY) ====================
+router.get('/all-submitted', async (req, res) => {
+    try {
+        const { grade, division, teacher } = req.query;
+        
+        let query = `
+            SELECT 
+                g.registration_code,
+                g.team_name,
+                g.project_title,
+                g.grade,
+                g.division,
+                g.teacher_guide,
+                g.project_submitted,
+                (SELECT ROUND(AVG(stars)::numeric, 1) FROM parent_ratings WHERE group_id = g.id) as average_rating,
+                (SELECT COUNT(*) FROM parent_ratings WHERE group_id = g.id) as total_ratings
+            FROM groups g
+            WHERE g.project_submitted = true
+        `;
+        
+        const params = [];
+        let paramIndex = 1;
+        
+        if (grade) {
+            query += ` AND g.grade = $${paramIndex}`;
+            params.push(parseInt(grade));
+            paramIndex++;
+        }
+        
+        if (division) {
+            query += ` AND g.division ILIKE $${paramIndex}`;
+            params.push(division);
+            paramIndex++;
+        }
+        
+        if (teacher) {
+            query += ` AND g.teacher_guide ILIKE $${paramIndex}`;
+            params.push(`%${teacher}%`);
+            paramIndex++;
+        }
+        
+        query += ` ORDER BY g.grade, g.division, g.team_name`;
+        
+        const result = await pool.query(query, params);
+        
+        res.json({
+            success: true,
+            data: result.rows
+        });
+        
+    } catch (error) {
+        console.error('Get All Projects Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch projects: ' + error.message
+        });
+    }
+});
+
 module.exports = router;
