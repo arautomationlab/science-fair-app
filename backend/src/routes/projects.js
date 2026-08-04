@@ -7,10 +7,62 @@ const QRCode = require('qrcode');
 
 // ✅ PUBLIC PROJECT VIEW - HIDE JUDGE SCORES
 router.get('/public/:code', async (req, res) => {
-    // ... existing code ...
+    try {
+        const { code } = req.params;
+        console.log('📥 Public project request for code:', code);
+
+        const result = await pool.query(
+            `SELECT 
+                g.id, g.registration_code, g.grade, g.division, 
+                g.teacher_guide, g.team_name, g.project_title, g.abstract,
+                g.students_data, g.project_submitted, g.created_at,
+                pd.aim, pd.materials, pd.procedure, pd.conclusion,
+                pd.abstract as project_abstract, pd.video_link, pd.images,
+                (SELECT ROUND(AVG(stars)::numeric, 1) FROM parent_ratings WHERE group_id = g.id) as average_rating,
+                (SELECT COUNT(*) FROM parent_ratings WHERE group_id = g.id) as total_ratings,
+                CASE 
+                    WHEN EXISTS (SELECT 1 FROM judge_scores WHERE group_id = g.id) 
+                    THEN true 
+                    ELSE false 
+                END as has_judge_scores,
+                (SELECT COUNT(*) FROM judge_scores WHERE group_id = g.id) as judge_count
+            FROM groups g
+            LEFT JOIN project_details pd ON g.id = pd.group_id
+            WHERE g.registration_code ILIKE $1`,
+            [code]
+        );
+
+        console.log('🔍 Found rows:', result.rows.length);
+        
+        if (result.rows.length > 0) {
+            console.log('📊 has_judge_scores:', result.rows[0].has_judge_scores);
+            console.log('📊 judge_count:', result.rows[0].judge_count);
+        }
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Project not found'
+            });
+        }
+
+        delete result.rows[0].password;
+
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Public Project Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch project: ' + error.message
+        });
+    }
 });
 
-// ✅ GET ALL SUBMITTED PROJECTS - MUST COME BEFORE /:code
+// ✅ GET ALL SUBMITTED PROJECTS (ONLY ONCE!)
 router.get('/all-submitted', async (req, res) => {
     try {
         const { grade, division, teacher } = req.query;
@@ -120,7 +172,6 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
 
         console.log('🔑 Registration code from frontend:', registration_code);
 
-        // ✅ Find group - case insensitive using ILIKE
         let groupId = null;
         let groupData = null;
         
@@ -146,13 +197,11 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
             });
         }
 
-        // Get image URLs from Cloudinary
         let imageUrls = [];
         if (req.files && req.files.length > 0) {
             imageUrls = req.files.map(file => file.path);
         }
 
-        // Check if project already exists
         const existing = await pool.query(
             'SELECT * FROM project_details WHERE group_id = $1',
             [groupId]
@@ -160,7 +209,6 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
 
         let result;
         if (existing.rows.length > 0) {
-            // Update existing
             result = await pool.query(
                 `UPDATE project_details 
                 SET aim = $1, materials = $2, procedure = $3, conclusion = $4,
@@ -171,7 +219,6 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
             );
             console.log('✅ Project updated for group:', groupId);
         } else {
-            // Insert new
             result = await pool.query(
                 `INSERT INTO project_details 
                 (group_id, aim, materials, procedure, conclusion, abstract, video_link, images)
@@ -182,18 +229,15 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
             console.log('✅ New project created for group:', groupId);
         }
 
-        // Update group submission status
         await pool.query(
             'UPDATE groups SET project_submitted = TRUE, submitted_at = NOW() WHERE id = $1',
             [groupId]
         );
 
-        // ✅ GENERATE QR CODE AFTER SUBMISSION
         const frontendUrl = process.env.APP_URL || 'https://science-fair-app.vercel.app';
         const qrData = `${frontendUrl}/project/${registration_code}`;
         const qrCodeDataUrl = await QRCode.toDataURL(qrData);
 
-        // ✅ SAVE QR CODE TO DATABASE
         await pool.query(
             'UPDATE groups SET qr_code = $1 WHERE id = $2',
             [qrCodeDataUrl, groupId]
@@ -216,65 +260,6 @@ router.post('/submit', authenticate, upload.array('images', 5), async (req, res)
         res.status(500).json({
             success: false,
             message: 'Failed to submit project: ' + error.message
-        });
-    }
-});
-
-// ==================== GET ALL SUBMITTED PROJECTS (PUBLIC INFO ONLY) ====================
-router.get('/all-submitted', async (req, res) => {
-    try {
-        const { grade, division, teacher } = req.query;
-        
-        let query = `
-            SELECT 
-                g.registration_code,
-                g.team_name,
-                g.project_title,
-                g.grade,
-                g.division,
-                g.teacher_guide,
-                g.project_submitted,
-                (SELECT ROUND(AVG(stars)::numeric, 1) FROM parent_ratings WHERE group_id = g.id) as average_rating,
-                (SELECT COUNT(*) FROM parent_ratings WHERE group_id = g.id) as total_ratings
-            FROM groups g
-            WHERE g.project_submitted = true
-        `;
-        
-        const params = [];
-        let paramIndex = 1;
-        
-        if (grade) {
-            query += ` AND g.grade = $${paramIndex}`;
-            params.push(parseInt(grade));
-            paramIndex++;
-        }
-        
-        if (division) {
-            query += ` AND g.division ILIKE $${paramIndex}`;
-            params.push(division);
-            paramIndex++;
-        }
-        
-        if (teacher) {
-            query += ` AND g.teacher_guide ILIKE $${paramIndex}`;
-            params.push(`%${teacher}%`);
-            paramIndex++;
-        }
-        
-        query += ` ORDER BY g.grade, g.division, g.team_name`;
-        
-        const result = await pool.query(query, params);
-        
-        res.json({
-            success: true,
-            data: result.rows
-        });
-        
-    } catch (error) {
-        console.error('Get All Projects Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch projects: ' + error.message
         });
     }
 });
